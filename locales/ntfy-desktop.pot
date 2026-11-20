@@ -103,3 +103,7 @@ msgstr ""
 #: internal/config/toml.go
 msgid "unsupported key"
 msgstr ""
+
+#: internal/notify/notify.go
+msgid "Open"
+msgstr ""

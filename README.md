@@ -100,6 +100,7 @@ to the tests.
 cmd/ntfy-desktop/     entry point
 internal/config/      configuration loading and validation
 internal/ntfy/        ntfy protocol: JSON stream, authentication, reconnection
+internal/notify/      desktop notifications over the freedesktop D-Bus service
 internal/platform/    session user, locale and desktop detection
 internal/version/     version injected at build time
 assets/               icon (SVG + PNG) and banner
