@@ -367,6 +367,73 @@ KDE en *su* idioma, no las nuestras. Para que los botones digan lo que el mensaj
 
 Aportes de traducción: PR sobre el `.po` correspondiente, con DCO como el resto.
 
+## 18. Empaquetado y distribución
+
+Cuatro canales, del más simple al más dependiente de infraestructura.
+
+| Canal | Para quién | Herramienta |
+|---|---|---|
+| **Script** (`install.sh`) sin root | cualquiera, ya | shell, sin dependencias |
+| **`.deb`** | Debian, Ubuntu, Kubuntu | `nfpm` desde goreleaser |
+| **`.rpm`** | Fedora, openSUSE | `nfpm` desde goreleaser |
+| **`.pkg.tar.zst`** | Arch, Manjaro | `nfpm` desde goreleaser |
+| **`.tar.gz`** con checksums | el resto | goreleaser (ya previsto) |
+
+`nfpm` (MIT, 2.7k★, activo) construye los tres formatos desde un mismo archivo, sin cgo, y
+goreleaser lo invoca con la sección `nfpms:`. Se configura una vez y sale en cada release.
+
+Nota sobre `.pkg`: en Linux no existe ese formato. El equivalente en Arch es `.pkg.tar.zst`, y
+es el que se cubre. macOS queda fuera del alcance del producto.
+
+### Contenido de los paquetes
+
+```
+/usr/bin/ntfy-desktop
+/usr/lib/systemd/user/ntfy-desktop.service
+/usr/share/applications/ntfy-desktop.desktop
+/usr/share/icons/hicolor/scalable/apps/ntfy-desktop.svg
+/usr/share/locale/<idioma>/LC_MESSAGES/ntfy-desktop.mo
+/usr/share/doc/ntfy-desktop/{LICENSE,NOTICE,README.md}
+```
+
+La configuración **no** la pone el paquete: vive en `~/.config/ntfy-desktop/` y la crea el
+usuario. Un paquete nunca escribe en el home de nadie.
+
+Los archivos de empaquetado viven en el repo, en `packaging/` (`.desktop`, `.service`, icono), y
+los consume tanto `nfpm` como el script.
+
+### Script de instalación
+
+Para quien no quiere ni puede usar un paquete:
+
+```sh
+./install.sh                 # ~/.local, sin root
+./install.sh --prefix /usr/local   # con root, si se prefiere
+./install.sh --uninstall
+```
+
+Copia el binario, el `.desktop`, la unit de systemd de usuario y las traducciones, y verifica
+que el escritorio tenga la herramienta de diálogo que corresponde. No toca nada fuera del
+prefijo elegido.
+
+### Lo que queda descartado, y por qué
+
+**Flatpak y Snap no son viables con este diseño.** Un paquete sandbox no puede ejecutar
+`kdialog` del sistema, y en Plasma el portal de notificaciones no está implementado — sólo
+`notificationinhibition` en `xdg-desktop-portal-kde`. Sin diálogo del escritorio y sin portal,
+no hay forma de pedir una decisión. Se reevalúa sólo si KDE implementa el portal.
+
+### Firma y verificación
+
+- Cada release publica `checksums.txt` (ya previsto) y una firma de ese archivo.
+- Los `.deb`/`.rpm` se pueden firmar con GPG más adelante, cuando exista un repositorio propio.
+- Repositorio apt/dnf propio: **después**, no en el alcance inicial.
+
+### Cumplimiento de la licencia
+
+Cada paquete incluye `LICENSE` y `NOTICE`, y el código fuente queda disponible en el repositorio
+público. El binario se puede reconstruir con el script del toolchain incluido.
+
 ---
 
 ## Nota: uso interno
