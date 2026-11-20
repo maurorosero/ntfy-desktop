@@ -114,10 +114,14 @@ because the project has a single maintainer; **the checks are what gate the merg
 ## Branches: work on `devs`, release through `main`
 
 ```
-devs     working branch. Commits and pushes go here directly. Integration.
-main     what gets released. Only receives merges from devs, always through a pull request.
+devs     the working branch, the only permanent one locally. Direct pushes.
+main     lives ONLY on the remote. Never cloned, never checked out locally.
 topic    feat/…, fix/…, chore/…: for changes that should not sit half-done on devs.
 ```
+
+**`main` does not exist locally.** Do not create the branch, do not `git switch main`, do not
+commit there. The only way in is a `devs -> main` pull request merged on GitHub; the result is
+read through `origin/main`, which is a remote-tracking ref.
 
 ### Day to day
 
@@ -144,8 +148,12 @@ git branch -d feat/something
 ```sh
 gh pr create --base main --head devs --title "..." --body "..."
 gh pr checks <n>           # the four checks must be green
-gh pr merge <n> --merge        # a merge commit marks the release
-git switch main && git pull && git tag -a v0.x.y -m "..." && git push origin v0.x.y
+gh pr merge <n> --merge        # a merge commit marks the release on the remote
+
+# tag the published merge without creating main locally
+git fetch origin main
+git tag -a v0.x.y -m "..." origin/main
+git push origin v0.x.y
 ```
 
 Releases land with a **merge commit**, not a rebase. Each release is then an explicit, immutable

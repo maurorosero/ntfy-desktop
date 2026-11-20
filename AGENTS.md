@@ -232,13 +232,17 @@ igual. No se edita el About en la web sin actualizar el archivo.
 ## 8.2 Flujo de ramas — obligatorio
 
 ```
-devs     rama de trabajo. Acá se commitea y se pushea directo. Es la integración.
-main     lo publicado. Sólo recibe merges desde devs, y siempre por PR. Tags desde acá.
+devs     rama de trabajo, la única permanente en local. Push directo.
+main     vive SÓLO en el remoto. No se clona, no se toca desde acá: se mergea por PR.
 tema     feat/…, fix/…, chore/…: para cambios que no conviene hacer sobre devs.
 ```
 
+**`main` no existe en local.** No se crea la rama, no se hace `git switch main`, no se commitea
+ahí. El único camino de entrada es un PR `devs → main` que se mergea en GitHub; el resultado se
+consulta con `origin/main`, que es una referencia remota, no una rama.
+
 `devs` **acepta push directo**: no hace falta PR para trabajar. El ciclo normal es commitear y
-pushear ahí. `main` es la única puerta: rechaza el push directo, también para el dueño.
+pushear ahí.
 
 ### Trabajo diario
 
@@ -266,8 +270,12 @@ git branch -d feat/algo
 ```sh
 gh pr create --base main --head devs --title "…" --body "…"
 gh pr checks <n>           # tienen que estar los cuatro en verde
-gh pr merge <n> --merge        # commit de merge: el release queda marcado
-git switch main && git pull && git tag -a v0.x.y -m "…" && git push origin v0.x.y
+gh pr merge <n> --merge        # commit de merge: el release queda marcado en el remoto
+
+# el tag se corta sobre el merge ya publicado, sin crear main en local
+git fetch origin main
+git tag -a v0.x.y -m "…" origin/main
+git push origin v0.x.y
 ```
 
 **Se publica con commit de merge, no con rebase.** Así cada release queda como un punto
