@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Bug report
+description: Something is not working as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening this report: run `./bin/ntfy-desktop` and paste the output below.
+        It prints user, locale, desktop and dialog tool, which answers most questions at once.
+
+        **Never paste tokens, passwords or message contents from a private topic.**
+
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: What happens
+      description: What you see, in concrete terms.
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos
+    attributes:
+      label: How to reproduce it
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: entorno
+    attributes:
+      label: Environment
+      description: Output of `./bin/ntfy-desktop`, plus your distribution and desktop version.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ntfy-desktop version
+      description: Output of `./bin/ntfy-desktop -version`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: registro
+    attributes:
+      label: Logs
+      description: Relevant output. Remove anything private first.
+      render: text
+    validations:
+      required: false

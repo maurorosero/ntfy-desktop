@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/maurorosero/ntfy-desktop/security/advisories/new
+    about: Report privately. Do not open a public issue for a vulnerability.
+  - name: ntfy itself (server, protocol, mobile and web clients)
+    url: https://github.com/binwiederhier/ntfy/issues
+    about: Problems with the ntfy server or the protocol belong upstream.

@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Feature request
+description: Propose a capability or a change in behaviour
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check `plan/alcance.md` first: the scope, the milestones and the decisions already
+        taken are written there, with the reason behind each one.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: The problem
+      description: What you cannot do today. Describe the situation, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: What you propose
+    validations:
+      required: true
+
+  - type: dropdown
+    id: alcance
+    attributes:
+      label: Where does this fit?
+      options:
+        - Core (subscription, messages, notifications)
+        - Decisions (dialogs, actions, queue)
+        - Publishing
+        - Packaging and distribution
+        - Translations
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternatives considered
+      description: Including doing nothing.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: reglas
+    attributes:
+      label: Project constraints
+      options:
+        - label: This does not require Qt, GTK or cgo
+          required: true
+        - label: Any new dependency is GPL-compatible
+          required: true
