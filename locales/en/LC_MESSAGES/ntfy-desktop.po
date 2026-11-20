@@ -103,3 +103,27 @@ msgstr "duplicate key"
 #: internal/config/toml.go
 msgid "unsupported key"
 msgstr "unsupported key"
+
+#: internal/dialog/dialog.go
+msgid "Decision"
+msgstr "Decision"
+
+#: internal/dialog/dialog.go
+msgid "Decision (%d of %d)"
+msgstr "Decision (%d of %d)"
+
+#: internal/dialog/dialog.go
+msgid "Dismiss"
+msgstr "Dismiss"
+
+#: internal/dialog/text.go
+msgid "Choose an action"
+msgstr "Choose an action"
+
+#: internal/dialog/zenity.go
+msgid "Select"
+msgstr "Select"
+
+#: internal/dialog/zenity.go
+msgid "Action"
+msgstr "Action"
