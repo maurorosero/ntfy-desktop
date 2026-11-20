@@ -192,6 +192,46 @@ Probados en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
 El núcleo no sabe qué escritorio hay. El adaptador se elige una vez al arrancar y expone tres
 operaciones: `avisar`, `decidir`, `bandeja`.
 
+### 8.1 Modularidad
+
+El desarrollo es **modular sobre monolítico hasta donde sea posible**: cada pieza con una
+responsabilidad, un contrato explícito y la posibilidad de probarse sola. Lo que no se hace es
+partir por partir.
+
+```
+cmd/ntfy-desktop/     composición: flags, cableado, arranque. Sin lógica de producto.
+internal/ntfy/        protocolo: stream JSON, reconexión, since, autenticación, publicar
+internal/queue/       cola de peticiones y su estado
+internal/history/     almacenamiento local de mensajes
+internal/config/      carga y validación de la configuración
+internal/notify/      contrato Notifier + implementación por D-Bus
+internal/dialog/      contrato Decider + adaptadores kdialog / zenity
+internal/i18n/        catálogos embebidos
+internal/platform/    detección de usuario, idioma y escritorio
+internal/version/     versión inyectada en el build
+```
+
+Criterios que justifican un paquete nuevo — tiene que cumplir al menos uno:
+
+1. **Cambia por un motivo distinto** que el resto (el protocolo cambia cuando cambia ntfy; el
+   adaptador cambia cuando cambia un escritorio).
+2. **Se puede probar solo**, sin abrir procesos ni red.
+3. **Tiene más de una implementación** o se prevé que la tenga (KDE/GNOME; notificación real vs
+   doble de prueba).
+
+Reglas de dependencia:
+
+- **El núcleo no importa adaptadores.** `internal/queue` no sabe que existe `kdialog`.
+- **Las interfaces se declaran en el paquete que las consume**; el adaptador devuelve tipos
+  concretos y no impone una interfaz.
+- **Un solo punto de cableado**: `cmd/ntfy-desktop` arma las piezas. Nada de singletons ni
+  estado global.
+- **Sin ciclos.** Si dos paquetes se necesitan mutuamente, la responsabilidad está mal cortada.
+
+Lo que **no** se hace todavía: separar en varios módulos de Go (`go.work`). Un módulo por pieza
+sólo se justifica cuando una de ellas tenga consumidor externo o ciclo de release propio; hoy
+sería costo sin beneficio.
+
 ## 9. Lenguaje: Go
 
 Decidido. Motivos, en orden:

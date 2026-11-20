@@ -105,6 +105,23 @@ Practices* del equipo de Go (fuentes al final).
 - `internal/` para lo que no es API pública. `cmd/<binario>/` para el `main`.
 - No inventar carpetas (`pkg/`, `utils/`, `helpers/`) sin motivo.
 
+### Modularidad
+
+El proyecto se desarrolla **modular sobre monolítico hasta donde sea posible** (ver
+`plan/alcance.md` §8.1). En la práctica:
+
+- **Un paquete, una razón para cambiar.** Antes de crear uno, verificá que cumpla al menos uno
+  de estos: cambia por un motivo distinto, se puede probar solo, o tiene más de una
+  implementación.
+- **El núcleo no importa adaptadores.** `internal/queue` no sabe que existe `kdialog`. El
+  contrato (`Notifier`, `Decider`) se declara del lado que lo consume.
+- **Un solo punto de cableado**: `cmd/ntfy-desktop` arma las piezas y las inyecta. Sin
+  singletons, sin variables de paquete mutables, sin `init()` que registre cosas.
+- **Sin ciclos de importación.** Si dos paquetes se necesitan mutuamente, la responsabilidad está
+  mal cortada: se mueve el tipo compartido a un tercer paquete pequeño, no se fuerza el ciclo.
+- **Nada de multi-módulo todavía.** `go.work` y módulos separados sólo cuando una pieza tenga
+  consumidor externo o release propio.
+
 ### Nombres y estilo
 - `MixedCaps`, no `snake_case`.
 - Inicialismos con caso consistente: `URL`, `HTTP`, `ID` → `ServeHTTP`, `appID`, nunca `Url`.
