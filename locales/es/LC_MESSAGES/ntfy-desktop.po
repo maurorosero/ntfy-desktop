@@ -107,3 +107,26 @@ msgstr "clave no soportada"
 #: internal/notify/notify.go
 msgid "Open"
 msgstr "Abrir"
+#: internal/dialog/dialog.go
+msgid "Decision"
+msgstr "Decisión"
+
+#: internal/dialog/dialog.go
+msgid "Decision (%d of %d)"
+msgstr "Decisión (%d de %d)"
+
+#: internal/dialog/dialog.go
+msgid "Dismiss"
+msgstr "Descartar"
+
+#: internal/dialog/text.go
+msgid "Choose an action"
+msgstr "Elegí una acción"
+
+#: internal/dialog/zenity.go
+msgid "Select"
+msgstr "Elegir"
+
+#: internal/dialog/zenity.go
+msgid "Action"
+msgstr "Acción"

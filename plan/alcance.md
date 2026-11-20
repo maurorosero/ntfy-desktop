@@ -231,6 +231,7 @@ partir por partir.
 cmd/ntfy-desktop/     composición: flags, cableado, arranque. Sin lógica de producto.
 internal/ntfy/        protocolo: stream JSON, reconexión, since, autenticación, publicar
 internal/queue/       cola de peticiones y su estado
+internal/action/      ejecución de la acción elegida: `view` y `http`
 internal/history/     almacenamiento local de mensajes
 internal/config/      carga y validación de la configuración
 internal/notify/      contrato Notifier + implementación por D-Bus
