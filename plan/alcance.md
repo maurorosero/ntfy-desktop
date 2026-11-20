@@ -135,7 +135,7 @@ La columna Estado define qué entra en cada hito.
 |---|---|
 | Título, cuerpo, prioridad, etiquetas, hora, topic | **núcleo** |
 | Abrir el enlace del mensaje (`click`) | **núcleo** |
-| Historial local y estado leído/no leído | siguiente |
+| Historial local y estado leído/no leído | **núcleo**: `internal/history` y el comando `history`; falta que el daemon lo alimente |
 | Markdown en el cuerpo | siguiente |
 | Adjuntos: mostrar, descargar, abrir | siguiente |
 | Icono propio del mensaje (`icon`) | después |

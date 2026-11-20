@@ -164,6 +164,7 @@ msgstr ""
 msgid "invalid log level %q: use debug, info, warn or error"
 msgstr ""
 
+msgstr ""
 #: cmd/ntfy-desktop/publish.go
 msgid "usage: ntfy-desktop publish [topic] [flags]"
 msgstr ""
@@ -222,4 +223,25 @@ msgstr ""
 
 #: cmd/ntfy-desktop/publish.go
 msgid "publishing to %s failed"
+#: cmd/ntfy-desktop/commands.go
+msgid "lists the messages kept in the local history"
 msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "with history, lists only the messages that have not been read"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "--unread only makes sense with history"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "the history is empty"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "no unread messages"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "(no title)"

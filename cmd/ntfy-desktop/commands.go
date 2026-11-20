@@ -33,6 +33,8 @@ const (
 	commandVersion command = "version"
 	// commandPublish sends one message, read from stdin, to a topic.
 	commandPublish command = "publish"
+	// commandHistory lists the messages kept in the local history.
+	commandHistory command = "history"
 )
 
 // errUsage reports a command line that was already explained on stderr by the
@@ -49,6 +51,7 @@ type options struct {
 	level    slog.Level     // level of the logger
 	levelSet bool           // the flag carried the level, so it wins over the file
 	publish  publishOptions // flags of the publish command
+	unread   bool           // history lists only what has not been read
 }
 
 // run parses the command line and runs the subcommand it names. It returns the
@@ -73,6 +76,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return runDaemon(ctx, opts, env, tr, stderr)
 	case commandPublish:
 		return runPublish(ctx, opts, tr, os.Stdin, stdout, stderr)
+	case commandHistory:
+		return runHistory(opts, tr, stdout, stderr)
 	case commandVersion:
 		fmt.Fprintf(stdout, "ntfy-desktop %s\n", version.Version)
 		return 0
@@ -109,6 +114,8 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 	}
 	daemon := fs.Bool("daemon", false, tr.T("run until stopped: subscribe, notify and ask for decisions"))
 	version := fs.Bool("version", false, tr.T("prints the version and exits"))
+	historyCmd := fs.Bool("history", false, tr.T("lists the messages kept in the local history"))
+	unread := fs.Bool("unread", false, tr.T("with history, lists only the messages that have not been read"))
 	level := fs.String("log-level", "", tr.T("log level: debug, info, warn or error (default: info)"))
 
 	if err := fs.Parse(args); err != nil {
@@ -127,6 +134,7 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 	}{
 		{*daemon, commandDaemon},
 		{*version, commandVersion},
+		{*historyCmd, commandHistory},
 	} {
 		if !flagCmd.on {
 			continue
@@ -143,6 +151,18 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 		}
 		opts.level, opts.levelSet = l, true
 	}
+	// --unread narrows a listing that only `history` prints. On its own it is
+	// the same as asking for the history; next to another command it is a
+	// mistake worth reporting, not a flag to ignore.
+	if *unread {
+		if opts.explicit && opts.command != commandHistory {
+			return options{}, errors.New(tr.T("--unread only makes sense with history"))
+		}
+		if err := opts.choose(commandHistory, tr); err != nil {
+			return options{}, err
+		}
+		opts.unread = true
+	}
 	return opts, nil
 }
 
@@ -150,7 +170,7 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 // with `--version` is a mistake worth reporting, not something to guess about.
 func (o *options) choose(c command, tr *i18n.Translator) error {
 	switch c {
-	case commandEnv, commandDaemon, commandVersion:
+	case commandEnv, commandDaemon, commandVersion, commandHistory:
 	default:
 		return fmt.Errorf(tr.T("unknown command %q"), string(c))
 	}
