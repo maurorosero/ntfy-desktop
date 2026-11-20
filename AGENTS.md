@@ -326,8 +326,26 @@ git add CHANGELOG.md .changes && git commit -s -m "Changelog: 0.1.0"
 git push origin devs                # y después el PR devs → main
 ```
 
+**La documentación viaja con el cambio.** Si hay fragmentos de tipo `added`, `changed`,
+`deprecated` o `removed`, el mismo commit tiene que tocar `README.md`, `plan/`, `AGENTS.md` o
+`CONTRIBUTING.md`. Si de verdad no aplica —un cambio visible mínimo—, el fragmento lleva una
+línea `Docs: none` y esa línea no se copia al changelog.
+
 CI lo hace cumplir: en un PR a `devs` informa los fragmentos pendientes; en un PR a `main`
-**falla** si `CHANGELOG.md` no cambió respecto de `main`.
+**falla** si `CHANGELOG.md` no cambió respecto de `main`, y en ambos casos falla si hay cambios
+visibles sin documentación acompañando. Antes de abrir el PR se comprueba en local:
+
+```sh
+tools/changelog.sh check origin/devs
+```
+
+**El PR a `main` no se mergea si falta el changelog o la documentación.** GitHub no impide *abrir*
+un PR, pero sí mergearlo: los checks son obligatorios en `main`. La única excepción es un **fix
+prioritario**, y se marca con la etiqueta `hotfix` en el PR: el check deja pasar y deja constancia
+en el job (`::warning::gate saltado`). Lo que se saltee queda a la vista, no se pierde.
+
+Un hotfix no es una puerta para cambios cómodos: si se usa para algo que no era urgente, el
+registro del PR lo muestra.
 
 ## 8.4 Preparar un release — tarea del agente
 

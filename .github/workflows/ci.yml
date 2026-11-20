@@ -63,6 +63,8 @@ jobs:
         with:
           fetch-depth: 0
       - name: fragmentos y sección de versión
+        env:
+          HOTFIX: ${{ contains(github.event.pull_request.labels.*.name, 'hotfix') && '1' || '0' }}
         run: |
           git fetch --no-tags origin "${{ github.base_ref }}"
           if [ "${{ github.base_ref }}" = "main" ]; then
@@ -71,6 +73,9 @@ jobs:
           else
             # Integración: se informan los fragmentos pendientes, no se bloquea.
             tools/changelog.sh check
+          fi
+          if [ "${HOTFIX}" = "1" ]; then
+            echo "::warning::gate saltado: el PR lleva la etiqueta hotfix"
           fi
 
   build:

@@ -74,6 +74,7 @@ construir_seccion() {
 			while IFS= read -r linea; do
 				[ -n "${linea}" ] || continue
 				case "${linea}" in
+				[Dd]ocs:*) continue ;;
 				-) echo "- " ;;
 				*) echo "- ${linea}" ;;
 				esac
@@ -143,9 +144,34 @@ cmd_prepare() {
 	echo "revisá el diff de CHANGELOG.md antes de mergear"
 }
 
+# Fragmentos que piden documentación: los que **introduce este cambio** y que
+# afectan lo que el usuario ve. Los fragmentos viejos, ya integrados, no cuentan.
+# Un fragmento se exime con una línea "Docs: none".
+fragmentos_con_docs() {
+	local base="$1"
+	if [ -z "${base}" ] || ! git rev-parse --verify --quiet "${base}" >/dev/null; then
+		echo 0
+		return
+	fi
+	local n=0
+	while IFS= read -r f; do
+		[ -n "${f}" ] || continue
+		case "${f}" in
+		.changes/unreleased/*-*.md) ;;
+		*) continue ;;
+		esac
+		grep -qiE '^[Dd]ocs:[[:space:]]*(none|n/?a)' "${RAIZ}/${f}" 2>/dev/null && continue
+		n=$((n + 1))
+	done < <(git diff --name-only --diff-filter=AM "${base}...HEAD" -- .changes/unreleased/ 2>/dev/null)
+	echo "${n}"
+}
+
 cmd_check() {
 	local base="${1:-}"
 	local fallo=0
+	# HOTFIX=1 sólo lo pone CI cuando el PR lleva la etiqueta hotfix: se avisa y
+	# no se bloquea. Sirve para un fix prioritario; lo que se saltee queda a la vista.
+	local hotfix="${HOTFIX:-0}"
 
 	# 1. La sección [Unreleased] tiene que existir.
 	grep -q "^## \[Unreleased\]" "${CHANGELOG}" || {
@@ -161,15 +187,37 @@ cmd_check() {
 		pendientes=$((pendientes + n))
 	done
 
-	# 3. Si el PR va a main, el CHANGELOG tiene que haber cambiado.
-	if [ -n "${base}" ] && git rev-parse --verify --quiet "${base}" >/dev/null; then
+	# 3. Si hay cambios visibles, la documentación tiene que venir en el mismo cambio.
+	local exigen_docs
+	exigen_docs="$(fragmentos_con_docs "${base}")"
+	if [ "${exigen_docs}" -gt 0 ] && [ -n "${base}" ] && git rev-parse --verify --quiet "${base}" >/dev/null; then
+		local docs_tocados
+		docs_tocados="$(git diff --name-only "${base}...HEAD" -- \
+			README.md AGENTS.md CONTRIBUTING.md plan/ 2>/dev/null | grep -c . || true)"
+		if [ "${docs_tocados}" -eq 0 ]; then
+			echo "hay ${exigen_docs} cambio(s) visible(s) y ningún documento cambió"
+			echo "actualizá README.md, plan/ o AGENTS.md — o marcá el fragmento con 'Docs: none' si de verdad no aplica"
+			[ "${hotfix}" = "1" ] && echo "HOTFIX: se deja pasar, y queda registrado" || fallo=1
+		else
+			echo "documentación actualizada junto al cambio: OK (${docs_tocados} archivo/s)"
+		fi
+	fi
+
+	# 4. Si el PR va a main, el CHANGELOG tiene que haber cambiado.
+	local destino="${base##*/}"
+	if [ "${destino}" = "main" ] && [ -n "${base}" ] && git rev-parse --verify --quiet "${base}" >/dev/null; then
 		if git diff --quiet "${base}...HEAD" -- CHANGELOG.md; then
 			echo "el PR va a main y CHANGELOG.md no cambió"
 			echo "corré: tools/changelog.sh prepare vX.Y.Z"
-			fallo=1
+			[ "${hotfix}" = "1" ] && echo "HOTFIX: se deja pasar, y queda registrado" || fallo=1
 		else
 			echo "CHANGELOG.md cambió respecto de ${base}: OK"
 		fi
+	fi
+
+	if [ "${hotfix}" = "1" ]; then
+		echo ""
+		echo "ATENCIÓN: gate saltado por hotfix. El pendiente queda a la vista en el changelog."
 	fi
 
 	if [ "${fallo}" -ne 0 ]; then

@@ -193,8 +193,26 @@ At release time:
 tools/changelog.sh prepare v0.1.0   # builds the section, removes the used fragments
 ```
 
+**Documentation travels with the change.** If there are `added`, `changed`, `deprecated` or
+`removed` fragments, the same commit must touch `README.md`, `plan/`, `AGENTS.md` or
+`CONTRIBUTING.md`. If that genuinely does not apply — a minimal user-visible change — the
+fragment carries a `Docs: none` line, which is not copied into the changelog.
+
 CI enforces it: a pull request to `devs` reports pending fragments; a pull request to `main`
-**fails** if `CHANGELOG.md` did not change against `main`.
+**fails** if `CHANGELOG.md` did not change against `main`; both fail when user-visible changes
+arrive without documentation. Check locally before opening the pull request:
+
+```sh
+tools/changelog.sh check origin/devs
+```
+
+**A pull request to `main` cannot be merged while the changelog or the documentation is missing.**
+GitHub does not stop you from *opening* a pull request, but it stops the merge: the checks are
+required on `main`. The only exception is a **priority fix**, marked with the `hotfix` label: the
+check lets it through and records it in the job (`::warning::gate saltado`). Whatever is skipped
+stays visible.
+
+`hotfix` is not a shortcut for comfortable changes: the pull request record shows when it is used.
 
 ## Preparing a release
 
