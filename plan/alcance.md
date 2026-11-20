@@ -39,11 +39,14 @@ escritorio, ni de saber que quedaron pendientes.
 | R4 | La petición no se pierde si estoy trabajando | pedido de Mauro |
 | R5 | Sólo una ventana de decisión a la vez | prueba: dos diálogos se apilan y la primera queda tapada |
 | R6 | Reconectar y recuperar lo que llegó mientras estaba apagado | diseño |
-| R7 | Credenciales fuera del código | convención de la casa (Infisical) |
+| R7 | Las credenciales no viven en el código: se leen de configuración o del entorno | requisito de producto |
+
+Todo lo que identifica a una instalación concreta —servidor, topic, credenciales, rutas—
+entra por **configuración**, nunca en el código ni en la documentación del producto.
 
 ## 5. Hechos verificados que condicionan el diseño
 
-Todo lo siguiente se probó en la máquina de Mauro (Kubuntu, Plasma 6.6.7, Wayland):
+Todo lo siguiente se probó en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
 
 - **La notificación del sistema no dibuja botones.** Las acciones se envían y el servidor
   anuncia la capacidad `actions`, pero no se renderizan. Por eso la decisión no va por ahí.
@@ -60,18 +63,18 @@ Todo lo siguiente se probó en la máquina de Mauro (Kubuntu, Plasma 6.6.7, Wayl
 
 | Decisión | Motivo |
 |---|---|
-| Transporte: **ntfy** self-hosted en `tsh01` | ya está instalado, con usuarios y ACL por topic |
-| Credenciales: **Infisical** (`NTFY_URL`, `NTFY_PUBLISH_TOKEN`, `NTFY_SUBSCRIBE_TOKEN`) | convención de la casa |
+| Transporte: **ntfy**, con la URL del servidor por configuración | protocolo abierto; funciona contra cualquier instancia, propia o pública |
+| Topic y credenciales: **por configuración** (archivo o entorno) | el producto no conoce ninguna instalación concreta |
 | Aviso: **notificación del sistema** con timeout explícito | no roba el foco |
 | Decisión: **`kdialog --yesnocancel`** | único mecanismo que dibuja botones y persiste |
 | **Cola de a una petición** | R5 |
-| Lenguaje: **Python, sólo biblioteca estándar** | ya está en la máquina, sin dependencias |
-| Repositorio: **`ntfy-desktop`**, aislado | no se despliega nada en `~/install` |
+| Lenguaje: **Python, sólo biblioteca estándar** | sin dependencias que instalar |
+| Repositorio: **`ntfy-desktop`**, producto aislado | se sostiene solo; no depende de nada de la casa |
 
 ## 7. Preguntas abiertas
 
 1. **Cómo vuelve la respuesta.** Dos caminos posibles:
-   - publicar en un topic de respuesta (`casa-respuestas`), o
+   - publicar en un topic de respuesta, o
    - llamar una URL que venga en la acción (`http`).
    El primero no exige exponer nada; el segundo es el estándar de ntfy.
 2. **Qué pasa cuando el emisor espera y nadie contesta.** ¿Vence? ¿Se reintenta?
@@ -102,6 +105,14 @@ Sin fechas. Cada hito se cierra cuando se puede probar.
 ## 10. Riesgos
 
 - **Dependencia de la sesión gráfica**: sin sesión no hay diálogo. Los pendientes se acumulan.
-- **El servidor ntfy es un punto único**: si `tsh01` cae, no hay avisos.
+- **El servidor ntfy es un punto único**: si el servidor cae, no hay avisos.
 - **Los tokens dan acceso al topic completo**: un token filtrado permite publicar y leer.
 - **Plasma puede cambiar** su comportamiento en notificaciones entre versiones.
+
+---
+
+## Nota: uso interno
+
+En nuestra instalación apuntamos a nuestro propio servidor y tomamos las credenciales de
+nuestro gestor de secretos. Eso **es uso, no diseño**: no aparece en el código, ni en la
+configuración de ejemplo, ni en las pruebas del producto.
