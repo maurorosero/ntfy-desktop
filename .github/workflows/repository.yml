@@ -65,12 +65,6 @@ jobs:
             git -C sitio remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           fi
 
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.tag.outputs.tag }}
-          path: fuentes
-          fetch-depth: 0
-
       - name: paquetes del release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -103,7 +97,6 @@ jobs:
           cp -n paquetes/*amd64.rpm "sitio/rpm/x86_64/" 2>/dev/null || true
           cp -n paquetes/*arm64.rpm "sitio/rpm/aarch64/" 2>/dev/null || true
           cp -f paquetes/checksums.txt "sitio/$TAG-checksums.txt" 2>/dev/null || true
-          cp -f fuentes/packaging/apt/repo-key.asc "sitio/keys/repo-key.asc"
 
           # ---- apt ----
           for arch in amd64 arm64; do
@@ -159,6 +152,10 @@ jobs:
             gpg --batch --yes --local-user "${fpr}" --armor --detach-sign \
               -o "sitio/rpm/${arch}/repodata/repomd.xml.asc" "sitio/rpm/${arch}/repodata/repomd.xml"
           done
+
+          # La clave que se publica es la que firma: sale de aquí, no del árbol,
+          # así no puede quedar desincronizada.
+          gpg --armor --export "${fpr}" > "sitio/keys/repo-key.asc"
 
           gpg --verify "sitio/apt/dists/${SUITE}/InRelease" >/dev/null 2>&1 &&
             echo "InRelease verificado"
