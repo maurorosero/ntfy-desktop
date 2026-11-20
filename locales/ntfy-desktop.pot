@@ -163,3 +163,63 @@ msgstr ""
 #: cmd/ntfy-desktop/commands.go
 msgid "invalid log level %q: use debug, info, warn or error"
 msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "usage: ntfy-desktop publish [topic] [flags]"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "topic to publish to (default: the one in the configuration)"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "message title"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "priority from 1 to 5, or min, low, default, high or max"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "tags, separated by commas"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "url to open when the notification is clicked"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "render the message as Markdown"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the topic is given both as an argument and with --topic"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "invalid priority %q: use 1 to 5, min, low, default, high or max"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server did not return a message id"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "reading the message from stdin"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message is larger than %d bytes"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message body is empty: write it to stdin"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server refused to publish to %s: the topic may be read-only, or the credentials may not be allowed to write to it"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "publishing to %s failed"
+msgstr ""
