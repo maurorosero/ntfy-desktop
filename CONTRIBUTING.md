@@ -111,39 +111,54 @@ a release with a missing string in either is not released.
 force-push, and administrators are subject to the same rules. Required approvals are zero
 because the project has a single maintainer; **the checks are what gate the merge**.
 
-## Branches: `topic → devs → main`
-
-Two permanent branches and nothing else:
+## Branches: work on `devs`, release through `main`
 
 ```
-main     what gets released. Receives merges from devs only; tags are cut here.
-devs     integration. All work lands here first.
-topic    feat/something, fix/something, docs/something: hours or days, deleted on merge.
+devs     working branch. Commits and pushes go here directly. Integration.
+main     what gets released. Only receives merges from devs, always through a pull request.
+topic    feat/…, fix/…, chore/…: for changes that should not sit half-done on devs.
 ```
 
-The flow, in order:
+### Day to day
 
 ```sh
-git switch devs && git pull
-git switch -c fix/something
+git switch devs
+git pull --rebase
 # ... work ...
-git commit -s
-git push -u origin fix/something
-gh pr create --base devs              # 1) topic -> devs
-# once checks pass: merge
-gh pr create --base main --head devs  # 2) devs -> main, when releasing
+make check                 # before every push: fmt, vet, tests, build
+git commit -s -m "..."
+git push origin devs
 ```
 
-Rules that keep this from stepping on itself:
+For anything that takes several steps, use a topic branch and merge it into `devs` once green:
 
-- **Never commit on `main` or `devs`.** Both reject direct pushes, the owner included.
-- **`devs` stays ahead of `main`, never the other way round.** If something fixed on `main` is
-  needed in `devs`, merge `main` into `devs`; never rewrite.
-- **One topic, one branch, one PR.** Short branches: if it takes weeks, split it.
-- **Tags are cut from `main`**, never from `devs`.
-- Merge commits created by GitHub are not signed; the DCO check ignores them (`--no-merges`)
-  and reviews only the PR's own commits.
-- Bot commits (Dependabot, Renovate, `[bot]`) are skipped by the DCO check: they cannot sign.
+```sh
+git switch -c feat/something origin/devs
+# ... work ...
+git switch devs && git merge --no-ff feat/something && git push origin devs
+git branch -d feat/something
+```
+
+### Releasing: `devs → main`, always by pull request
+
+```sh
+gh pr create --base main --head devs --title "..." --body "..."
+gh pr checks <n>           # the four checks must be green
+gh pr merge <n> --rebase
+```
+
+`main` is protected: no direct pushes, not even for the owner, linear history, no force-push.
+
+### Rules
+
+- **Never push to `main`.** Anything that has to land there goes through a PR from `devs`.
+- **`devs` stays ahead of `main`.** If `main` ever receives something out of band, merge it into
+  `devs`; never rewrite `devs`.
+- **Run `make check` before pushing to `devs`.** CI runs on the push but does not block; a red
+  `devs` is the first thing to fix.
+- **Merge commits and bot commits are not signed.** The DCO check ignores them (`--no-merges`,
+  `[bot]`).
+- **Tags are cut from `main`.**
 
 ## Reporting bugs
 
