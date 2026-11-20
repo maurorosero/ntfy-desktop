@@ -1,5 +1,7 @@
 # ntfy-desktop
 
+![ntfy-desktop](assets/banner.png)
+
 Cliente de ntfy para escritorio Linux.
 
 Estado: **esqueleto**. Todavía no habla con el servidor: detecta el entorno —usuario de sesión,

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>ntfy-desktop</title>
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#10403C"/>
+    </linearGradient>
+    <linearGradient id="brillo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0FDFA"/>
+      <stop offset="1" stop-color="#CCFBF1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#fondo)"/>
+
+  <!-- pantalla -->
+  <rect x="46" y="52" width="164" height="112" rx="14" fill="none" stroke="url(#brillo)" stroke-width="11"/>
+  <!-- pie -->
+  <rect x="115" y="169" width="26" height="24" fill="url(#brillo)"/>
+  <rect x="86" y="192" width="84" height="13" rx="6.5" fill="url(#brillo)"/>
+
+  <!-- campana -->
+  <rect x="122" y="60" width="12" height="14" rx="6" fill="url(#brillo)"/>
+  <path d="M128 74c-16 0-29 13-29 29v11c0 3.8-1.5 7.4-4.2 10.1L87 132h82l-7.8-7.9c-2.7-2.7-4.2-6.3-4.2-10.1v-11c0-16-13-29-29-29z" fill="url(#brillo)"/>
+  <circle cx="128" cy="139" r="8" fill="url(#brillo)"/>
+</svg>

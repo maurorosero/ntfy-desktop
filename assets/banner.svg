@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <title>ntfy-desktop</title>
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B2E2B"/>
+      <stop offset="1" stop-color="#05201E"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.22" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#0F766E" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#0F766E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iconoFondo" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#10403C"/>
+    </linearGradient>
+    <linearGradient id="brillo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0FDFA"/>
+      <stop offset="1" stop-color="#CCFBF1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#fondo)"/>
+  <rect width="1280" height="640" fill="url(#halo)"/>
+
+  <!-- icono, escalado 0.9 -->
+  <g transform="translate(96,203) scale(0.915)">
+    <rect width="256" height="256" rx="56" fill="url(#iconoFondo)"/>
+    <rect x="46" y="52" width="164" height="112" rx="14" fill="none" stroke="url(#brillo)" stroke-width="11"/>
+    <rect x="115" y="169" width="26" height="24" fill="url(#brillo)"/>
+    <rect x="86" y="192" width="84" height="13" rx="6.5" fill="url(#brillo)"/>
+    <rect x="122" y="60" width="12" height="14" rx="6" fill="url(#brillo)"/>
+    <path d="M128 74c-16 0-29 13-29 29v11c0 3.8-1.5 7.4-4.2 10.1L87 132h82l-7.8-7.9c-2.7-2.7-4.2-6.3-4.2-10.1v-11c0-16-13-29-29-29z" fill="url(#brillo)"/>
+    <circle cx="128" cy="139" r="8" fill="url(#brillo)"/>
+  </g>
+
+  <text x="392" y="292" font-family="DejaVu Sans, sans-serif" font-size="86" font-weight="bold" fill="#F0FDFA" letter-spacing="-1">ntfy-desktop</text>
+  <text x="396" y="352" font-family="DejaVu Sans, sans-serif" font-size="33" fill="#5EEAD4">A ntfy client for the Linux desktop</text>
+  <text x="396" y="404" font-family="DejaVu Sans, sans-serif" font-size="24" fill="#99F6E4" opacity="0.85">KDE Plasma first · notifications, decisions and publishing</text>
+  <text x="396" y="446" font-family="DejaVu Sans, sans-serif" font-size="24" fill="#99F6E4" opacity="0.6">GPL-3.0-or-later · no cgo · single binary</text>
+</svg>

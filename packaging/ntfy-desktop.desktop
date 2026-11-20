@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=ntfy-desktop
+Name[es]=ntfy-desktop
+GenericName=ntfy client
+GenericName[es]=Cliente de ntfy
+Comment=Receive ntfy messages and act on them from your desktop
+Comment[es]=Recibe mensajes de ntfy y actúa sobre ellos desde el escritorio
+Exec=ntfy-desktop
+TryExec=ntfy-desktop
+Icon=ntfy-desktop
+Terminal=false
+Categories=Network;
+Keywords=ntfy;notifications;push;alerts;
+Keywords[es]=ntfy;notificaciones;avisos;alertas;
+StartupNotify=true
+StartupWMClass=ntfy-desktop
+X-GNOME-UsesNotifications=true

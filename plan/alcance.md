@@ -286,10 +286,12 @@ ntfy-desktop/
 ├── tools/bootstrap-go.sh baja y verifica el toolchain (versión + sha256)
 ├── cmd/                 punto de entrada
 ├── internal/            núcleo y adaptadores
+├── assets/              icono (SVG + PNG 64/128/256/512) y banner
+├── packaging/           .desktop · unit de systemd · (nfpm cuando toque)
 ├── plan/                este documento
 ├── LICENSE · NOTICE
 ├── go.mod · go.sum
-└── .gitignore
+└── .gitignore · .gitattributes
 ```
 
 ### `.gitignore`

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Unidad de usuario: arranca el cliente junto con la sesión gráfica.
+# NOTA: el modo --daemon se implementa en el hito 1 del plan. Hasta entonces,
+# habilitar esta unidad sólo arranca el binario y termina.
+
+[Unit]
+Description=ntfy-desktop client
+Documentation=https://github.com/maurorosero/ntfy-desktop
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ntfy-desktop --daemon
+Restart=on-failure
+RestartSec=5
+
+# Sólo lo necesario: sin acceso amplio al sistema.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.config/ntfy-desktop %h/.local/share/ntfy-desktop
+
+[Install]
+WantedBy=graphical-session.target
