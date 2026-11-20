@@ -46,3 +46,9 @@ repos:
         files: \.go$
         pass_filenames: false
         entry: tools/hooks/spdx.sh
+
+      - id: permisos
+        name: permisos del repositorio
+        language: system
+        pass_filenames: false
+        entry: tools/hooks/permisos.sh

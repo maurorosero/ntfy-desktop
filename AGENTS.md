@@ -179,6 +179,9 @@ No se cruzan, ni con permiso implícito:
 - **Sin telemetría** de ningún tipo.
 - **No escribir en `~/install`** ni en rutas de despliegue: el producto es aislado.
 - **No editar `.toolchain/`** ni commitearlo.
+- **Permisos**: ningún archivo del repo es escribible por grupo ni por terceros. Sólo el dueño
+  escribe (`644` archivos, `755` directorios y scripts). El hook `tools/hooks/permisos.sh` lo
+  verifica y falla si algo se afloja.
 - **No ampliar el alcance** por cuenta propia.
 
 ---

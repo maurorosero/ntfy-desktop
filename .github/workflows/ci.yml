@@ -35,6 +35,8 @@ jobs:
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - name: cabecera SPDX
         run: tools/hooks/spdx.sh
+      - name: permisos
+        run: tools/hooks/permisos.sh
       - name: staticcheck
         run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
 
