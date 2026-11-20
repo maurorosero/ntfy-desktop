@@ -1,0 +1,19 @@
+ntfy-desktop
+Copyright (C) 2026 the ntfy-desktop authors
+
+Este programa es software libre: usted puede redistribuirlo y/o modificarlo bajo los
+términos de la GNU General Public License, versión 3 o posterior, publicada por la Free
+Software Foundation. Ver el archivo LICENSE.
+
+Se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA.
+
+---
+
+## Componentes de terceros
+
+Actualmente el proyecto no incluye código de terceros: sólo la biblioteca estándar de Go
+(licencia BSD-3-Clause, titular The Go Authors).
+
+Cuando se incorporen dependencias, cada una se lista aquí con su licencia y su titular.
+Las dependencias previstas en el plan son: godbus (BSD-2-Clause), notify (BSD-3-Clause) y
+systray (MIT).

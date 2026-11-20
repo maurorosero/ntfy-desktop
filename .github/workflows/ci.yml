@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: calidad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - name: gofmt
+        run: |
+          fuera="$(gofmt -l .)"
+          if [ -n "${fuera}" ]; then echo "${fuera}"; exit 1; fi
+      - name: vet
+        run: go vet ./...
+      - name: test
+        run: go test ./...
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: cabecera SPDX
+        run: tools/hooks/spdx.sh
+
+  build:
+    name: build ${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - name: compilar sin cgo
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.goarch }} go build -trimpath -o /dev/null ./cmd/ntfy-desktop
+
+  secretos:
+    name: secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Hooks locales que usan el toolchain del propio repositorio (.toolchain/go).
+# Instalación:  pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt
+        language: system
+        files: \.go$
+        pass_filenames: false
+        entry: tools/hooks/gofmt.sh
+
+      - id: go-vet
+        name: go vet
+        language: system
+        files: \.go$
+        pass_filenames: false
+        entry: ./.toolchain/go/bin/go vet ./...
+
+      - id: go-test
+        name: go test
+        language: system
+        files: \.go$
+        pass_filenames: false
+        entry: ./.toolchain/go/bin/go test ./...
+
+      - id: govulncheck
+        name: govulncheck
+        language: system
+        files: \.(go|mod|sum)$
+        pass_filenames: false
+        entry: ./.toolchain/go/bin/go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - id: gitleaks
+        name: gitleaks
+        language: system
+        pass_filenames: false
+        entry: tools/hooks/gitleaks.sh
+
+      - id: spdx
+        name: cabecera SPDX
+        language: system
+        files: \.go$
+        pass_filenames: false
+        entry: tools/hooks/spdx.sh

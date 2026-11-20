@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+version: 2
+
+project_name: ntfy-desktop
+
+builds:
+  - id: ntfy-desktop
+    main: ./cmd/ntfy-desktop
+    binary: ntfy-desktop
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/maurorosero/ntfy-desktop/internal/version.Version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^ci:"
+
+release:
+  footer: |
+    Binarios sin cgo para linux/amd64 y linux/arm64.
+    Verificación: `sha256sum -c checksums.txt`
