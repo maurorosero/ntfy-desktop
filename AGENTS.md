@@ -295,6 +295,32 @@ sincronización después. `git log --first-parent main` muestra la línea de pub
 | DCO falla en un PR de dependabot | commit de bot sin firma | el hook omite `[bot]`; si falla, el PR tiene base vieja |
 | `divergent branches` al hacer `git pull` | `devs` local atrás de un rebase | `git pull --rebase` o `git reset --hard origin/devs` si no hay trabajo propio |
 
+## 8.3 Changelog por fragmentos
+
+El changelog no se escribe de memoria al final: **cada cambio visible deja su entrada cuando se
+hace**, en `.changes/unreleased/`.
+
+```
+.changes/unreleased/added-<algo>.md      capacidad nueva
+.changes/unreleased/changed-<algo>.md    comportamiento que cambió
+.changes/unreleased/fixed-<algo>.md      error corregido
+.changes/unreleased/security-<algo>.md   problema de seguridad
+```
+
+El contenido es la entrada, en inglés, una o dos líneas. Los cambios internos (refactor sin
+efecto, `ci:`, docs, dependencias que no cambian comportamiento) **no llevan fragmento**.
+
+Al publicar:
+
+```sh
+tools/changelog.sh prepare v0.1.0   # arma la sección y borra los fragmentos usados
+git add CHANGELOG.md .changes && git commit -s -m "Changelog: 0.1.0"
+git push origin devs                # y después el PR devs → main
+```
+
+CI lo hace cumplir: en un PR a `devs` informa los fragmentos pendientes; en un PR a `main`
+**falla** si `CHANGELOG.md` no cambió respecto de `main`.
+
 ## 9. Comandos
 
 ```sh
