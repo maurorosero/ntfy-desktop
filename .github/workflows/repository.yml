@@ -103,9 +103,11 @@ jobs:
           for arch in amd64 arm64; do
             dir="sitio/apt/dists/${SUITE}/${COMPONENT}/binary-${arch}"
             mkdir -p "${dir}"
+            # Se corre desde dentro de apt/: el Filename que escribe es relativo a
+            # la raíz del repositorio, y la URL base ya termina en /apt.
             (
-              cd sitio
-              dpkg-scanpackages --arch "${arch}" apt/pool > "apt/dists/${SUITE}/${COMPONENT}/binary-${arch}/Packages" 2>/dev/null
+              cd sitio/apt
+              dpkg-scanpackages --arch "${arch}" pool > "dists/${SUITE}/${COMPONENT}/binary-${arch}/Packages" 2>/dev/null
             )
             gzip -9kc "${dir}/Packages" > "${dir}/Packages.gz"
           done
