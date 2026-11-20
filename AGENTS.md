@@ -266,20 +266,19 @@ git branch -d feat/algo
 ```sh
 gh pr create --base main --head devs --title "…" --body "…"
 gh pr checks <n>           # tienen que estar los cuatro en verde
-gh pr merge <n> --rebase
+gh pr merge <n> --merge        # commit de merge: el release queda marcado
 git switch main && git pull && git tag -a v0.x.y -m "…" && git push origin v0.x.y
-
-# 5. después de publicar: sincronizar devs con main
-#    (el merge con rebase recrea los commits en main con otro hash; devs se alinea)
-git switch devs && git merge origin/main && git push origin devs
 ```
+
+**Se publica con commit de merge, no con rebase.** Así cada release queda como un punto
+explícito en `main`, `devs` siempre es ancestro suyo, y no hace falta ningún paso de
+sincronización después. `git log --first-parent main` muestra la línea de publicaciones.
 
 ### Reglas
 
 - **Nunca se pushea a `main`.** Ni el dueño. Si algo tiene que entrar, entra por PR desde `devs`.
-- **Después de cada release, `devs` se sincroniza con `main`** (`git merge origin/main`). El merge
-  con rebase recrea los commits en `main` con otro hash, así que sin esa sincronización `devs`
-  queda divergente y el siguiente PR arrastra conflictos artificiales. Nunca se reescribe `devs`.
+- **`devs` siempre es ancestro de `main`**: el release entra con commit de merge, así que no hay
+  divergencia ni sincronización posterior. Nunca se reescribe `devs`.
 - **`make check` antes de cada push a `devs`.** CI corre igual en el push, pero no bloquea: si
   falla, el que queda en rojo es `devs`. Arreglarlo es lo primero.
 - **Un tema, una rama, un PR a `main`.** Nada de ramas eternas.
