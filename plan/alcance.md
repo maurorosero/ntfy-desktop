@@ -211,7 +211,8 @@ Decidido. Motivos, en orden:
 | Transporte: **ntfy**, URL del servidor por configuración | protocolo abierto; cualquier instancia |
 | Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
 | Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
-| Decisión: **`kdialog`** en Plasma, `zenity` en GNOME | único mecanismo que dibuja botones y persiste |
+| Decisión: **`kdialog --menu`** en Plasma, botones del aviso en GNOME | único mecanismo que dibuja botones, persiste y permite etiquetas propias traducidas |
+| **Idiomas: gettext (`.po`), fuente en inglés** | formato que el ecosistema ya usa; traducible por terceros |
 | **Cola de a una petición** | N2 |
 | **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
 | **Identidad = usuario de la sesión** | el cliente no administra cuentas |
@@ -322,6 +323,45 @@ admins sujetos a la regla · aprobaciones requeridas: 0
 
 Cero aprobaciones porque hay una sola identidad: el titular puede mergear su propio PR sin
 segundo revisor, igual que en los otros repositorios públicos de la casa.
+
+## 17. Idiomas (i18n)
+
+El producto es traducible desde el primer día, no después.
+
+**Formato: gettext (`.po`)** con `leonelquinteros/gotext` (MIT, activo, 514★).
+
+Es el formato que el ecosistema Linux ya usa: los traductores lo abren con Poedit o Weblate, las
+distros lo integran, y es texto plano que se versiona y se revisa en un diff.
+
+**Idioma fuente: inglés.** Las cadenas se escriben en inglés y se traducen; el español es la
+primera traducción. Es la convención de los proyectos públicos y permite que cualquiera aporte
+sin que el español sea el original.
+
+**Detección del idioma**: se toma del entorno de la sesión —`LANG`, `LC_ALL`, `LC_MESSAGES`— con
+la misma lógica que la identidad. Cadena de respaldo: `es_PA` → `es` → `en`.
+
+**Qué se traduce y qué no**
+
+| Se traduce | No se traduce |
+|---|---|
+| Toda cadena de la interfaz | El contenido de los mensajes de ntfy |
+| Etiquetas de los diálogos | Los nombres de los topics |
+| Mensajes de error y registro | Los valores de configuración |
+| Formatos de fecha y hora | — |
+
+**Consecuencia en el diseño de diálogos**: con `kdialog --yesnocancel` las etiquetas las pone
+KDE en *su* idioma, no las nuestras. Para que los botones digan lo que el mensaje pide
+—"Aprobar"/"Rechazar"— hay que usar `--menu` con las etiquetas del catálogo. Eso confirma
+`--menu` como la opción del adaptador de KDE.
+
+**Control en integración continua**
+
+- Las cadenas fuente se extraen y se comparan contra cada `.po`; si falta una traducción, avisa;
+  si falta una cadena, **falla**.
+- Los `.po` se compilan en el build; un `.po` roto rompe la construcción.
+- Ninguna cadena visible se escribe directamente en el código.
+
+Aportes de traducción: PR sobre el `.po` correspondiente, con DCO como el resto.
 
 ---
 
