@@ -103,3 +103,7 @@ msgstr "clave repetida"
 #: internal/config/toml.go
 msgid "unsupported key"
 msgstr "clave no soportada"
+
+#: internal/notify/notify.go
+msgid "Open"
+msgstr "Abrir"
