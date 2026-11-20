@@ -212,7 +212,7 @@ Decidido. Motivos, en orden:
 | Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
 | Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
 | Decisión: **`kdialog --menu`** en Plasma, botones del aviso en GNOME | único mecanismo que dibuja botones, persiste y permite etiquetas propias traducidas |
-| **Idiomas: gettext (`.po`), fuente en inglés** | formato que el ecosistema ya usa; traducible por terceros |
+| **Idiomas: inglés (fuente) y español**, gettext `.po` | formato que el ecosistema ya usa; el resto entra por aporte |
 | **Cola de a una petición** | N2 |
 | **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
 | **Identidad = usuario de la sesión** | el cliente no administra cuentas |
@@ -336,6 +336,10 @@ distros lo integran, y es texto plano que se versiona y se revisa en un diff.
 **Idioma fuente: inglés.** Las cadenas se escriben en inglés y se traducen; el español es la
 primera traducción. Es la convención de los proyectos públicos y permite que cualquiera aporte
 sin que el español sea el original.
+
+**Idiomas soportados inicialmente: inglés y español.** El inglés es el catálogo fuente y el
+español el primer `.po` traducido; los dos se mantienen completos y son requisito de release.
+Cualquier otro idioma entra por aporte, sin comprometer el alcance inicial.
 
 **Detección del idioma**: se toma del entorno de la sesión —`LANG`, `LC_ALL`, `LC_MESSAGES`— con
 la misma lógica que la identidad. Cadena de respaldo: `es_PA` → `es` → `en`.
