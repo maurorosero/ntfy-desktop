@@ -257,6 +257,72 @@ Sin fechas. Cada hito se cierra cuando se puede probar.
 - **Plasma puede cambiar** su comportamiento en notificaciones entre versiones.
 - **GNOME sin verificar**: hasta probarlo, el soporte es una intención, no un hecho.
 
+## 15. Licencia
+
+**GPL-3.0-or-later.** Texto completo en `LICENSE`, y `SPDX-License-Identifier: GPL-3.0-or-later`
+en la cabecera de cada archivo de código.
+
+Es compatible con todas las dependencias previstas —`godbus` (BSD-2), `notify` (BSD-3),
+`systray` (MIT), stdlib de Go (BSD-3)— y con `kdialog`/`zenity`, que se ejecutan como procesos
+externos y no se enlazan.
+
+Obligaciones que asume el proyecto:
+
+- Quien distribuya el binario debe poder obtener el código, incluidas las modificaciones.
+- Debe incluirse lo necesario para compilarlo: el script del toolchain con versión y checksum
+  forma parte del cumplimiento, no es un extra.
+- Los avisos de licencia de las dependencias van en `NOTICE`.
+
+Contribuciones: **DCO** (`Signed-off-by` en cada commit), no CLA.
+
+## 16. Repositorio y CI/CD
+
+### Estructura
+
+```
+ntfy-desktop/
+├── .toolchain/          toolchain de Go, gitignored (~250 MB)
+├── tools/bootstrap-go.sh baja y verifica el toolchain (versión + sha256)
+├── cmd/                 punto de entrada
+├── internal/            núcleo y adaptadores
+├── plan/                este documento
+├── LICENSE · NOTICE
+├── go.mod · go.sum
+└── .gitignore
+```
+
+### `.gitignore`
+
+```
+.toolchain/
+bin/
+dist/
+coverage.out
+*.test
+.env
+```
+
+### Integración continua, dos niveles
+
+| Nivel | Qué corre |
+|---|---|
+| **pre-commit** (local) | `gofmt -l` · `go vet` · `go test` · `govulncheck` · `gitleaks` |
+| **Pull request** (GitHub) | build `linux/amd64` y `linux/arm64` · vet · staticcheck · test · govulncheck · gitleaks · avisos de licencia |
+| **Tag** | binarios + `sha256` + `NOTICE`, release automática con goreleaser |
+| **Semanal** | dependabot + `govulncheck` programado |
+
+Nada llega al remoto si falla en local.
+
+### Protección de `main`
+
+```
+PR obligatorio · checks requeridos · sin force-push · historial lineal
+admins sujetos a la regla · aprobaciones requeridas: 0
+```
+
+Cero aprobaciones porque hay una sola identidad: el titular puede mergear su propio PR sin
+segundo revisor, igual que en los otros repositorios públicos de la casa.
+
 ---
 
 ## Nota: uso interno

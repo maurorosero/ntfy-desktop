@@ -1,4 +1,9 @@
-*.pyc
-__pycache__/
+.toolchain/
+bin/
+dist/
+coverage.out
+*.test
 .env
+__pycache__/
+*.pyc
 *.log
