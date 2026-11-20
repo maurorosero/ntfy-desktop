@@ -162,3 +162,27 @@ msgstr "unknown command %q"
 #: cmd/ntfy-desktop/commands.go
 msgid "invalid log level %q: use debug, info, warn or error"
 msgstr "invalid log level %q: use debug, info, warn or error"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "lists the messages kept in the local history"
+msgstr "lists the messages kept in the local history"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "with history, lists only the messages that have not been read"
+msgstr "with history, lists only the messages that have not been read"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "--unread only makes sense with history"
+msgstr "--unread only makes sense with history"
+
+#: cmd/ntfy-desktop/history.go
+msgid "the history is empty"
+msgstr "the history is empty"
+
+#: cmd/ntfy-desktop/history.go
+msgid "no unread messages"
+msgstr "no unread messages"
+
+#: cmd/ntfy-desktop/history.go
+msgid "(no title)"
+msgstr "(no title)"

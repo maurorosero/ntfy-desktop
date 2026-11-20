@@ -8,9 +8,10 @@ ntfy has a web app, a mobile app and a CLI — but no desktop client for Linux. 
 that client: it subscribes to a topic, shows what arrives as native notifications, lets you act
 on messages from a desktop dialog, and publishes messages back.
 
-**Status: pre-release.** It subscribes to a topic, shows what arrives as native notifications and
-asks for decisions through the desktop's own dialog. It runs with the graphical session as a user
-service. History and publishing are not there yet. See the [roadmap](#roadmap).
+**Status: pre-release.** It subscribes to a topic, shows what arrives as native notifications,
+asks for decisions through the desktop's own dialog and keeps the messages in a local history.
+It runs with the graphical session as a user service. Publishing is not there yet. See the
+[roadmap](#roadmap).
 
 ## What it does
 
@@ -19,6 +20,8 @@ service. History and publishing are not there yet. See the [roadmap](#roadmap).
 - Shows each message as a native desktop notification, with the urgency that matches its priority.
 - Opens a desktop dialog for messages that carry actions, one at a time, and runs the chosen
   action: open its link or call its URL.
+- Keeps a local history of the last messages under the user cache directory, with a read/unread
+  mark, listed by `ntfy-desktop history`.
 - Runs as a daemon from the graphical session, so messages arrive without a terminal open.
 
 ## Platforms
@@ -61,6 +64,8 @@ No Go installation is needed: `make` uses the toolchain inside the repository.
 ./bin/ntfy-desktop --version            # prints the version
 ./bin/ntfy-desktop --daemon             # subscribes until it is stopped
 ./bin/ntfy-desktop daemon --log-level debug   # same, with debug logging
+./bin/ntfy-desktop history              # what arrived, newest first
+./bin/ntfy-desktop history --unread     # only what has not been read
 ```
 
 With no arguments it prints what it detects about the session and exits:
@@ -80,6 +85,25 @@ dialog it opened is killed with it.
 
 The log level is `info` unless `--log-level` or the `log-level` key says otherwise
 (`debug`, `info`, `warn`, `error`); the flag wins over the file.
+
+## History
+
+`ntfy-desktop history` lists the messages kept in the local history, one line each: date, topic,
+title and the first line of the body. `--unread` narrows the listing to what has not been read yet;
+a star marks those in the full one.
+
+```sh
+ntfy-desktop history            # one line per message, newest first
+ntfy-desktop history --unread   # only the ones that have not been read
+```
+
+The history lives in `$XDG_CACHE_HOME/ntfy-desktop/history`, one append-only file per topic, and
+keeps the last 500 messages: older ones are dropped as new ones arrive and the file is compacted
+once it grows past that. A file that cannot be read is reported and replaced instead of stopping
+the program, and `rm -rf` on that directory is a safe way to start over.
+
+The store is in place and the command reads it; the daemon does not write to it yet, so the wiring
+of `Store.Add` and `Store.MarkRead` into the subscription is the next step.
 
 ## Run with the session
 
@@ -147,7 +171,7 @@ Full scope, milestones and acceptance criteria live in [`plan/alcance.md`](plan/
 2. Notify: one notification per message. — done
 3. Decide: actions, dialog, queue. — done
 4. Resilience: reconnect, catch up, start with the session. — done
-5. History. — next
+5. History: local store, read/unread, `history` command. — done
 6. Publishing.
 7. Portability: verify the GNOME adapter on a real machine.
 
