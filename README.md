@@ -20,7 +20,8 @@ session as a user service. See the
   server goes away.
 - Shows each message as a native desktop notification, with the urgency that matches its priority.
 - Opens a desktop dialog for messages that carry actions, one at a time, and runs the chosen
-  action: open its link or call its URL.
+  action: open its link or call its URL. One action is one button, two actions are three buttons
+  labelled from the catalog, and the dialog wears the urgency of the message as its icon.
 - Keeps a local history of the last messages under the user cache directory, with a read/unread
   mark, listed by `ntfy-desktop history`.
 - Runs as a daemon from the graphical session, so messages arrive without a terminal open.

@@ -283,7 +283,7 @@ Decidido. Motivos, en orden:
 | Transporte: **ntfy**, URL del servidor por configuración | protocolo abierto; cualquier instancia |
 | Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
 | Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
-| Decisión: **`kdialog --menu`** en Plasma, botones del aviso en GNOME | único mecanismo que dibuja botones, persiste y permite etiquetas propias traducidas |
+| Decisión: **`kdialog` con botones** en Plasma, **`zenity`** con botones en GNOME | dibuja botones reales, persiste y permite etiquetas propias traducidas en los dos |
 | **Idiomas: inglés (fuente) y español**, gettext `.po` | formato que el ecosistema ya usa; el resto entra por aporte |
 | **Cola de a una petición** | N2 |
 | **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
@@ -434,10 +434,16 @@ la misma lógica que la identidad. Cadena de respaldo: `es_PA` → `es` → `en`
 | Mensajes de error y registro | Los valores de configuración |
 | Formatos de fecha y hora | — |
 
-**Consecuencia en el diseño de diálogos**: con `kdialog --yesnocancel` las etiquetas las pone
-KDE en *su* idioma, no las nuestras. Para que los botones digan lo que el mensaje pide
-—"Aprobar"/"Rechazar"— hay que usar `--menu` con las etiquetas del catálogo. Eso confirma
-`--menu` como la opción del adaptador de KDE.
+**Consecuencia en el diseño de diálogos**: los dos adaptadores renombran sus botones desde el
+catálogo, así que las etiquetas son nuestras y del idioma del usuario: `kdialog --yes-label`,
+`--no-label` y `--cancel-label`, y `zenity --ok-label`, `--extra-button` y `--cancel-label`.
+Con dos acciones se piden con botones reales —un clic, no una lista más un botón—; con una sola,
+un botón; con tres o más, la lista, porque ninguno de los dos tiene más botones.
+
+Dos detalles que costaron verificar y están anotados en el código: `kdialog` devuelve `0` para el
+sí, `1` para el no y `2` para cancelar, y **zenity devuelve `1` para su botón extra por
+compatibilidad con 3.x — el mismo código que su cancelar**, así que hay que pasarle
+`ZENITY_EXTRA` para poder distinguirlos.
 
 **Control en integración continua**
 

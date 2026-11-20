@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
 	"testing"
 
@@ -28,6 +30,20 @@ func view(label, url string) ntfy.Action {
 	return ntfy.Action{Action: "view", Label: label, URL: url}
 }
 
+// exitCode builds the *exec.ExitError a dialog leaves behind when it exits with
+// that code, so the test reads the same error the adapter reads.
+func exitCode(code int) error {
+	p, err := os.StartProcess("/bin/sh", []string{"sh", "-c", fmt.Sprintf("exit %d", code)}, &os.ProcAttr{})
+	if err != nil {
+		panic(err)
+	}
+	state, err := p.Wait()
+	if err != nil {
+		panic(err)
+	}
+	return &exec.ExitError{ProcessState: state}
+}
+
 func TestArgs(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -39,24 +55,26 @@ func TestArgs(t *testing.T) {
 		want    []string
 	}{
 		{
-			name:    "kdialog with two actions",
+			// Two actions are the common case, and both desktops can draw them as
+			// real buttons: the labels are ours and the answer is one click.
+			name:    "kdialog with two actions uses three buttons",
 			adapter: "kdialog",
-			msg:     ntfy.Message{Title: "Unauthorized access", Message: "Movement in the yard"},
+			msg:     ntfy.Message{Title: "Unauthorized access", Message: "Movement in the yard", Priority: 3},
 			actions: []ntfy.Action{
 				view("Open portal", "https://home.example/"),
 				view("Turn down", "https://api.example/"),
 			},
 			want: []string{
 				"--title", "Decision",
-				"--menu", "<b>Unauthorized access</b><br/>Movement in the yard",
-				"--default", "1",
-				"1", "Open portal",
-				"2", "Turn down",
-				"0", "Dismiss",
+				"--icon", "dialog-question",
+				"--yesnocancel", "<b>Unauthorized access</b><br/>Movement in the yard",
+				"--yes-label", "Open portal",
+				"--no-label", "Turn down",
+				"--cancel-label", "Dismiss",
 			},
 		},
 		{
-			name:    "kdialog says how many are waiting",
+			name:    "kdialog with one action puts it on the only button",
 			adapter: "kdialog",
 			pos:     1,
 			total:   2,
@@ -64,10 +82,9 @@ func TestArgs(t *testing.T) {
 			actions: []ntfy.Action{view("Open portal", "https://home.example/")},
 			want: []string{
 				"--title", "Decision (1 of 2)",
-				"--menu", "<b>Unauthorized access</b>",
-				"--default", "1",
-				"1", "Open portal",
-				"0", "Dismiss",
+				"--icon", "dialog-question",
+				"--msgbox", "<b>Unauthorized access</b>",
+				"--ok-label", "Open portal",
 			},
 		},
 		{
@@ -77,10 +94,9 @@ func TestArgs(t *testing.T) {
 			actions: []ntfy.Action{view("Open portal", "https://home.example/")},
 			want: []string{
 				"--title", "Decision",
-				"--menu", "<b>&lt;i&gt;bold&lt;/i&gt;</b><br/>a &amp; b<br/>second line",
-				"--default", "1",
-				"1", "Open portal",
-				"0", "Dismiss",
+				"--icon", "dialog-question",
+				"--msgbox", "<b>&lt;i&gt;bold&lt;/i&gt;</b><br/>a &amp; b<br/>second line",
+				"--ok-label", "Open portal",
 			},
 		},
 		{
@@ -89,48 +105,72 @@ func TestArgs(t *testing.T) {
 			actions: []ntfy.Action{view("", "https://home.example/")},
 			want: []string{
 				"--title", "Decision",
-				"--menu", "Choose an action",
+				"--icon", "dialog-question",
+				"--msgbox", "Choose an action",
+				"--ok-label", "view", // no label: the kind of action is all there is
+			},
+		},
+		{
+			// Three actions do not fit on two buttons, so the menu comes back and
+			// carries the way out as a row.
+			name:    "kdialog with three actions keeps the menu",
+			adapter: "kdialog",
+			msg:     ntfy.Message{Title: "Intruder", Priority: 5},
+			actions: []ntfy.Action{
+				view("Open portal", "https://home.example/"),
+				view("Turn down", "https://api.example/"),
+				view("Call me", "https://call.example/"),
+			},
+			want: []string{
+				"--title", "Decision",
+				"--icon", "dialog-warning",
+				"--menu", "<b>Intruder</b>",
 				"--default", "1",
-				"1", "view", // no label: the kind of action is all there is
+				"1", "Open portal",
+				"2", "Turn down",
+				"3", "Call me",
 				"0", "Dismiss",
 			},
 		},
 		{
-			name:    "zenity with two actions",
+			name:    "kdialog says how loud a quiet message is",
+			adapter: "kdialog",
+			msg:     ntfy.Message{Title: "Backup done", Priority: 1},
+			actions: []ntfy.Action{view("Open portal", "https://home.example/")},
+			want: []string{
+				"--title", "Decision",
+				"--icon", "dialog-information",
+				"--msgbox", "<b>Backup done</b>",
+				"--ok-label", "Open portal",
+			},
+		},
+		{
+			name:    "zenity with two actions uses three buttons",
 			adapter: "zenity",
-			msg:     ntfy.Message{Title: "Unauthorized access", Message: "Movement in the yard"},
+			msg:     ntfy.Message{Title: "Unauthorized access", Message: "Movement in the yard", Priority: 4},
 			actions: []ntfy.Action{
 				view("Open portal", "https://home.example/"),
 				view("Turn down", "https://api.example/"),
 			},
 			want: []string{
-				"--list", "--radiolist",
 				"--title", "Decision",
-				"--text", "<b>Unauthorized access</b>\nMovement in the yard",
-				"--column", "", "--column", "", "--column", "Action",
-				"--hide-header", "--hide-column=2", "--print-column=2",
-				"--ok-label", "Select", "--cancel-label", "Dismiss",
-				"TRUE", "1", "Open portal",
-				"FALSE", "2", "Turn down",
-				"FALSE", "0", "Dismiss",
+				"--question", "--text", "<b>Unauthorized access</b>\nMovement in the yard",
+				"--ok-label", "Open portal",
+				"--extra-button", "Turn down",
+				"--cancel-label", "Dismiss",
 			},
 		},
 		{
-			name:    "zenity says how many are waiting",
+			name:    "zenity with one action puts it on the only button",
 			adapter: "zenity",
 			pos:     2,
 			total:   2,
 			msg:     ntfy.Message{Title: "Denied request"},
 			actions: []ntfy.Action{view("Open portal", "https://home.example/")},
 			want: []string{
-				"--list", "--radiolist",
 				"--title", "Decision (2 of 2)",
-				"--text", "<b>Denied request</b>",
-				"--column", "", "--column", "", "--column", "Action",
-				"--hide-header", "--hide-column=2", "--print-column=2",
-				"--ok-label", "Select", "--cancel-label", "Dismiss",
-				"TRUE", "1", "Open portal",
-				"FALSE", "0", "Dismiss",
+				"--info", "--text", "<b>Denied request</b>",
+				"--ok-label", "Open portal",
 			},
 		},
 		{
@@ -139,13 +179,34 @@ func TestArgs(t *testing.T) {
 			msg:     ntfy.Message{Title: "<b>x</b>", Message: "a & b"},
 			actions: []ntfy.Action{view("Open portal", "https://home.example/")},
 			want: []string{
-				"--list", "--radiolist",
 				"--title", "Decision",
-				"--text", "<b>&lt;b&gt;x&lt;/b&gt;</b>\na &amp; b",
+				"--info", "--text", "<b>&lt;b&gt;x&lt;/b&gt;</b>\na &amp; b",
+				"--ok-label", "Open portal",
+			},
+		},
+		{
+			// The height grows with the rows: a fixed one clipped the last row
+			// behind the buttons.
+			name:    "zenity with three actions keeps the list and sizes it",
+			adapter: "zenity",
+			msg:     ntfy.Message{Title: "Intruder"},
+			actions: []ntfy.Action{
+				view("Open portal", "https://home.example/"),
+				view("Turn down", "https://api.example/"),
+				view("Call me", "https://call.example/"),
+			},
+			want: []string{
+				"--title", "Decision",
+				"--list", "--radiolist",
+				"--text", "<b>Intruder</b>",
 				"--column", "", "--column", "", "--column", "Action",
 				"--hide-header", "--hide-column=2", "--print-column=2",
-				"--ok-label", "Select", "--cancel-label", "Dismiss",
+				"--width", "520", "--height", "310",
+				"--ok-label", "Select",
+				"--cancel-label", "Dismiss",
 				"TRUE", "1", "Open portal",
+				"FALSE", "2", "Turn down",
+				"FALSE", "3", "Call me",
 				"FALSE", "0", "Dismiss",
 			},
 		},
@@ -242,6 +303,49 @@ func TestResolve(t *testing.T) {
 			}
 			if got != c.want {
 				t.Errorf("resolve(%q) = %q, quiero %q", c.tag, got, c.want)
+			}
+		})
+	}
+}
+
+// TestAnswerOfButtons covers the exit codes of --yesnocancel: 0 is the first
+// action, 1 the second and 2 the way out. Reading 1 as a cancel, which is what
+// the single-button dialogs do, would answer "turn down" with "no answer".
+func TestAnswerOfButtons(t *testing.T) {
+	actions := []ntfy.Action{view("Aprobar", "https://home.example/"), view("Rechazar", "https://api.example/")}
+
+	cases := []struct {
+		name      string
+		err       error
+		want      string
+		cancelled bool
+	}{
+		{name: "yes", err: nil, want: "Aprobar"},
+		{name: "no", err: exitCode(1), want: "Rechazar"},
+		{name: "cancel", err: exitCode(2), cancelled: true},
+		{name: "something else", err: exitCode(7), want: ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := answerOfButtons(context.Background(), c.err, actions)
+			if c.cancelled {
+				if !errors.Is(err, ErrCancelled) {
+					t.Fatalf("answerOfButtons = %v, quiero ErrCancelled", err)
+				}
+				return
+			}
+			if c.want == "" {
+				if err == nil {
+					t.Fatalf("answerOfButtons = %q, quiero error", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("answerOfButtons = %v, quiero nil", err)
+			}
+			if got != c.want {
+				t.Errorf("answerOfButtons = %q, quiero %q", got, c.want)
 			}
 		})
 	}
