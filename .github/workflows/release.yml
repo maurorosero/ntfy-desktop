@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Delivery: a tag on main becomes a release with the binaries built from it.
+# Delivery: a tag on main becomes a release with the packages built from it.
 #
 # The tag is the only trigger, and it is checked before anything is built: a tag
 # that does not sit on a merge commit of main, or that names a version missing
-# from CHANGELOG.md, stops the job instead of shipping a binary that lies about
+# from CHANGELOG.md, stops the job instead of shipping a package that lies about
 # what it contains.
 name: Release
 
@@ -36,11 +36,13 @@ jobs:
           version="${TAG#v}"
           git fetch --no-tags origin main
 
-          # 1) El commit del tag tiene que ser el merge que trajo los cambios a main.
+          # 1) El commit del tag tiene que estar en main.
           if ! git merge-base --is-ancestor "${TAG}^{commit}" origin/main; then
             echo "el tag ${TAG} no está en main: no se publica." >&2
             exit 1
           fi
+
+          # 2) Y tiene que ser el merge que trajo los cambios, no un commit suelto.
           padres="$(git rev-list --parents -n 1 "${TAG}^{commit}" | wc -w)"
           if [ "${padres}" -ne 3 ]; then
             echo "el commit de ${TAG} no es un merge commit (padres: $((padres - 1)))." >&2
@@ -48,22 +50,12 @@ jobs:
             exit 1
           fi
 
-          # 2) La versión tiene que estar escrita en el changelog.
+          # 3) La versión tiene que estar escrita en el changelog.
           if ! grep -qE "^## \[${version}\]" CHANGELOG.md; then
             echo "CHANGELOG.md no tiene una sección para ${version}." >&2
             exit 1
           fi
           echo "tag ${TAG}: merge de main con sección en el changelog"
-
-      - name: deja las notas de la versión
-        env:
-          TAG: ${{ github.ref_name }}
-        run: tools/changelog.sh notes "${TAG#v}" > release-notes.md
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: release-notes.md
-          retention-days: 1
 
   entrega:
     name: entrega
@@ -82,14 +74,17 @@ jobs:
           go test ./...
           tools/hooks/spdx.sh
           tools/hooks/permisos.sh
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-notes
+      - name: las notas salen del changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        # Fuera del árbol de trabajo: goreleaser se niega a construir con
+        # archivos sin versionar, y el cuerpo de la release no entra al repo.
+        run: tools/changelog.sh notes "${TAG#v}" > "${RUNNER_TEMP}/release-notes.md"
       - name: construir y publicar
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean --release-notes=release-notes.md
+          args: release --clean --release-notes=${{ runner.temp }}/release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: resumen
