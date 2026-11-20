@@ -145,6 +145,10 @@ git branch -d feat/something
 gh pr create --base main --head devs --title "..." --body "..."
 gh pr checks <n>           # the four checks must be green
 gh pr merge <n> --rebase
+
+# after releasing, bring main back into devs:
+# the rebase merge recreates the commits on main with different hashes
+git switch devs && git merge origin/main && git push origin devs
 ```
 
 `main` is protected: no direct pushes, not even for the owner, linear history, no force-push.
@@ -152,8 +156,9 @@ gh pr merge <n> --rebase
 ### Rules
 
 - **Never push to `main`.** Anything that has to land there goes through a PR from `devs`.
-- **`devs` stays ahead of `main`.** If `main` ever receives something out of band, merge it into
-  `devs`; never rewrite `devs`.
+- **After every release, sync `devs` with `main`** (`git merge origin/main`). A rebase merge
+  recreates the commits on `main` with new hashes; without this step `devs` diverges and the next
+  PR carries artificial conflicts. Never rewrite `devs`.
 - **Run `make check` before pushing to `devs`.** CI runs on the push but does not block; a red
   `devs` is the first thing to fix.
 - **Merge commits and bot commits are not signed.** The DCO check ignores them (`--no-merges`,
