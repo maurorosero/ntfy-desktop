@@ -32,12 +32,20 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 - GoReleaser configuration for `linux/amd64` and `linux/arm64` with checksums.
 - Application icon as SVG plus PNG at 64, 128, 256 and 512 px, and a 1280×640 banner.
 - `.desktop` entry (validated with `desktop-file-validate`) and a hardened systemd user unit.
+- Internationalization: gettext catalogs (`locales/<lang>/LC_MESSAGES/ntfy-desktop.po`)
+  embedded in the binary with `//go:embed`, source language English, Spanish translation,
+  fallback chain `es_PA -> es -> en` and `C`/`POSIX` mapping to `en`.
+- `install.sh`: installs without root into `~/.local` (or `--prefix`), with `--dry-run` and
+  `--uninstall`; warns when the desktop's dialog tool is missing.
+- CI now runs `staticcheck` and a DCO check on pull requests; `tools/hooks/dco.sh` verifies
+  the `Signed-off-by` trailer against each commit author.
 - License: GPL-3.0-or-later, with `LICENSE` and `NOTICE`.
+- `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1) and `SECURITY.md`.
 
 ### Known limitations
 
 - No daemon mode yet: the systemd unit refers to `--daemon`, which arrives with milestone 1.
-- No i18n catalogs yet: strings shown by the skeleton are still inline.
+- Spanish is the only translation so far; English is the source language.
 - GNOME support is scaffolded but unverified; there is no GNOME machine in the test setup.
 
 [Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.0.1...HEAD

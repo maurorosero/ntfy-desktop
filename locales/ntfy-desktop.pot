@@ -1,0 +1,41 @@
+# Translation template for ntfy-desktop.
+# Copyright (C) 2026 the ntfy-desktop authors
+# This file is distributed under the same license as the project (GPL-3.0-or-later).
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ntfy-desktop 0.0.1\n"
+"Report-Msgid-Bugs-To: https://github.com/maurorosero/ntfy-desktop/issues\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
+"PO-Revision-Date: 2026-11-20 12:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: cmd/ntfy-desktop/main.go
+msgid "user"
+msgstr ""
+
+#: cmd/ntfy-desktop/main.go
+msgid "locale"
+msgstr ""
+
+#: cmd/ntfy-desktop/main.go
+msgid "desktop"
+msgstr ""
+
+#: cmd/ntfy-desktop/main.go
+msgid "dialogs"
+msgstr ""
+
+#: cmd/ntfy-desktop/main.go
+msgid "no dialog tool found"
+msgstr ""
+
+#: cmd/ntfy-desktop/main.go
+msgid "prints the version and exits"
+msgstr ""

@@ -197,8 +197,9 @@ operaciones: `avisar`, `decidir`, `bandeja`.
 Decidido. Motivos, en orden:
 
 1. **Distribución**: binario único, sin intérprete ni runtime que instalar.
-2. **Sin dependencias**: `net/http` y `encoding/json` cubren el transporte; `kdialog`,
-   `zenity` y `notify-send` se ejecutan por `os/exec`. Sin cgo.
+2. **Dependencias mínimas**: `net/http` y `encoding/json` cubren el transporte; `kdialog`,
+   `zenity` y `notify-send` se ejecutan por `os/exec`. La única dependencia externa es
+   `gotext` (MIT, Go puro) para los catálogos de idioma. Sin cgo.
 3. **Arranque rápido**: el cliente vive en la sesión y debe estar listo al iniciar.
 4. **El precio, dicho de frente**: la bandeja del sistema va por D-Bus (StatusNotifierItem) y
    ahí sí hará falta una librería. Es el único punto donde Go deja de ser cero-dependencias, y
@@ -330,7 +331,11 @@ segundo revisor, igual que en los otros repositorios públicos de la casa.
 
 El producto es traducible desde el primer día, no después.
 
-**Formato: gettext (`.po`)** con `leonelquinteros/gotext` (MIT, activo, 514★).
+**Formato: gettext (`.po`)** con `leonelquinteros/gotext` (MIT, activo, 514★), versionado en
+`go.mod` y **embebido en el binario** (`//go:embed`): no hay archivos de idioma que instalar.
+
+Los catálogos viven en `locales/<idioma>/LC_MESSAGES/ntfy-desktop.po`, con
+`locales/ntfy-desktop.pot` como plantilla.
 
 Es el formato que el ecosistema Linux ya usa: los traductores lo abren con Poedit o Weblate, las
 distros lo integran, y es texto plano que se versiona y se revisa en un diff.

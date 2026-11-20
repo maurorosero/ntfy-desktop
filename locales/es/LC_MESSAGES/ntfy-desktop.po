@@ -1,0 +1,41 @@
+# Traducción al español de ntfy-desktop.
+# Copyright (C) 2026 the ntfy-desktop authors
+# This file is distributed under the same license as the project (GPL-3.0-or-later).
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ntfy-desktop 0.0.1\n"
+"Report-Msgid-Bugs-To: https://github.com/maurorosero/ntfy-desktop/issues\n"
+"POT-Creation-Date: 2026-11-20 12:00+0000\n"
+"PO-Revision-Date: 2026-11-20 12:00+0000\n"
+"Last-Translator: ntfy-desktop maintainers\n"
+"Language-Team: Español\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: cmd/ntfy-desktop/main.go
+msgid "user"
+msgstr "usuario"
+
+#: cmd/ntfy-desktop/main.go
+msgid "locale"
+msgstr "idioma"
+
+#: cmd/ntfy-desktop/main.go
+msgid "desktop"
+msgstr "escritorio"
+
+#: cmd/ntfy-desktop/main.go
+msgid "dialogs"
+msgstr "diálogos"
+
+#: cmd/ntfy-desktop/main.go
+msgid "no dialog tool found"
+msgstr "sin herramienta de diálogo"
+
+#: cmd/ntfy-desktop/main.go
+msgid "prints the version and exits"
+msgstr "muestra la versión y termina"

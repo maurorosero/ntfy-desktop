@@ -9,12 +9,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/maurorosero/ntfy-desktop/internal/i18n"
 	"github.com/maurorosero/ntfy-desktop/internal/platform"
 	"github.com/maurorosero/ntfy-desktop/internal/version"
 )
 
 func main() {
-	mostrarVersion := flag.Bool("version", false, "muestra la versión y termina")
+	entorno := platform.Detect()
+	tr := i18n.New(entorno.Locale)
+
+	mostrarVersion := flag.Bool("version", false, tr.T("prints the version and exits"))
 	flag.Parse()
 
 	if *mostrarVersion {
@@ -22,18 +26,16 @@ func main() {
 		return
 	}
 
-	entorno := platform.Detect()
-
 	herramienta := entorno.DialogTool
 	if herramienta == "" {
-		herramienta = "(ninguna: sin diálogos)"
+		herramienta = tr.T("no dialog tool found")
 	}
 
 	fmt.Printf("ntfy-desktop %s\n", version.Version)
-	fmt.Printf("  usuario   %s\n", entorno.User)
-	fmt.Printf("  idioma    %s\n", entorno.Locale)
-	fmt.Printf("  escritorio %s\n", entorno.Desktop)
-	fmt.Printf("  diálogos  %s\n", herramienta)
+	fmt.Printf("  %-10s %s\n", tr.T("user"), entorno.User)
+	fmt.Printf("  %-10s %s\n", tr.T("locale"), entorno.Locale)
+	fmt.Printf("  %-10s %s\n", tr.T("desktop"), entorno.Desktop)
+	fmt.Printf("  %-10s %s\n", tr.T("dialogs"), herramienta)
 
 	os.Exit(0)
 }
