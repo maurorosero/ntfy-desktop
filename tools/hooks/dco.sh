@@ -36,7 +36,7 @@ while read -r sha; do
 		echo "sin firma DCO: $(git log -1 --format='%h %s' "${sha}")  (autor ${autor})"
 		fallo=1
 	fi
-done < <(git rev-list "${base}..HEAD")
+done < <(git rev-list --no-merges "${base}..HEAD")
 
 if [ "${fallo}" -ne 0 ]; then
 	echo ""
