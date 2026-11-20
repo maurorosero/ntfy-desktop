@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Every release also publishes an apt and an rpm repository on GitHub Pages:
+  `apt install ntfy-desktop` after adding the key and the source, and `dnf install`
+  likewise. Both are signed with a key of their own, not with a personal one, and old
+  versions stay installable.
 - A tag on `main` delivers the release: `.github/workflows/release.yml` checks that the tag sits on
   the merge commit of the release pull request and that the version exists in this file, and then
   builds and publishes `.deb` and `.rpm` packages for `amd64` and `arm64` — binary in `/usr/bin`, menu

@@ -33,8 +33,10 @@ The push of the tag is what starts `.github/workflows/release.yml`.
      pull request, not on a commit pushed straight to `main`;
    - `CHANGELOG.md` must have a section for that version.
    If any of the three fails, the job stops and no binary is produced.
-2. **Notas** — `tools/changelog.sh notes vX.Y.Z` writes the release body from the changelog section,
-   so the release says what the changelog says.
+2. **Notas** — `tools/changelog.sh notes vX.Y.Z` builds the release body from the changelog section,
+   and `gh release edit` writes it after publishing. goreleaser is left to build packages: with
+   `--release-notes` in this version the body came out with only the footer, so the body is written by
+   a step that fails loudly if it does not apply.
 3. **Entrega** — the test suite and the repository hooks run again on the tagged tree, and then
    `goreleaser` builds and publishes, for `amd64` and `arm64`:
    - `ntfy-desktop_X.Y.Z_linux_amd64.deb` and `_linux_arm64.deb`
