@@ -38,9 +38,9 @@ puede actuar sobre él sin salir de donde está.
 
 | Entorno | Estado | Cómo |
 |---|---|---|
-| KDE Plasma y derivadas (Kubuntu, KDE neon) | **inicial** | `kdialog` para diálogos, `notify-send` para avisos |
-| GNOME y derivadas (Ubuntu, Fedora Workstation) | evaluable | `zenity` para diálogos; falta máquina de prueba |
-| Otros (XFCE, Cinnamon, Sway) | fuera de alcance por ahora | — |
+| KDE Plasma y derivadas (Kubuntu, KDE neon) | **alcance actual** | `kdialog` para diálogos, `notify-send` para avisos |
+| GNOME y derivadas (Ubuntu, Fedora Workstation) | **capa lista, sin implementar** | `zenity` para diálogos; falta máquina de prueba |
+| Otros (XFCE, Cinnamon, Sway) | fuera de alcance | — |
 
 **Detección en ejecución, no un producto por librería.** El producto no enlaza Qt ni GTK:
 delega el diálogo en la herramienta del escritorio.
@@ -51,7 +51,32 @@ GNOME  → zenity
 otro   → el que exista (zenity suele estar en ambos)
 ```
 
-Una sola compilación, y se evita enlazar dos toolkits (dos bucles de eventos, bindings frágiles).
+**Qué significa "capa lista"**: el núcleo habla con una interfaz de tres operaciones
+(`avisar`, `decidir`, `bandeja`) y nunca con `kdialog` directamente. Agregar GNOME es escribir
+una implementación nueva de esa interfaz, sin tocar el núcleo.
+
+## 4.1 Identidad
+
+El cliente **no tiene cuentas propias**: toma el usuario registrado en la sesión del sistema
+(`$USER`, `getuid()`). Ese usuario determina:
+
+- dónde vive la configuración (`~/.config/ntfy-desktop/`),
+- dónde vive el historial y el estado,
+- qué identidad se informa cuando el cliente responde una petición.
+
+No hay inicio de sesión en el cliente, ni usuarios que administrar dentro de él.
+
+## 4.2 Autenticación contra ntfy
+
+Dos modos, y sólo dos por ahora:
+
+| Modo | Cuándo | Cómo |
+|---|---|---|
+| **Sin credenciales** | topic público | sólo la URL del servidor y el topic |
+| **Usuario y contraseña** | topic protegido | HTTP Basic con el par configurado |
+
+La configuración declara el modo; si falta el par, se asume el primero. Un token (bearer) queda
+como variante a evaluar si un servidor lo exige.
 
 ## 5. Funcionalidades de un cliente ntfy
 
@@ -63,7 +88,9 @@ La columna Estado define qué entra en cada hito.
 | Función | Estado |
 |---|---|
 | Stream JSON por HTTP (`/topic/json`) | **núcleo** |
-| Autenticación con token y con usuario/contraseña | **núcleo** |
+| Sin credenciales (topic público) | **núcleo** |
+| Usuario y contraseña (HTTP Basic) | **núcleo** |
+| Identidad tomada del usuario de la sesión | **núcleo** |
 | Reconexión con espera creciente | **núcleo** |
 | Recuperar lo perdido (`since=<id>`) | **núcleo** |
 | Varios topics a la vez | siguiente |
@@ -128,7 +155,8 @@ La columna Estado define qué entra en cada hito.
 | N3 | Cerrar un diálogo sin responder no descarta la petición |
 | N4 | Las credenciales no viven en el código: configuración o entorno |
 | N5 | El producto no conoce ninguna instalación concreta |
-| N6 | Sin dependencias más allá de las herramientas del escritorio |
+| N6 | Sin dependencias más allá de las herramientas del escritorio (hasta la bandeja) |
+| N8 | La identidad es la del usuario de la sesión; el cliente no administra cuentas |
 | N7 | Sin conexión: reintenta y recupera al volver |
 
 ## 7. Hechos verificados que condicionan el diseño
@@ -164,18 +192,17 @@ Probados en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
 El núcleo no sabe qué escritorio hay. El adaptador se elige una vez al arrancar y expone tres
 operaciones: `avisar`, `decidir`, `bandeja`.
 
-## 9. Evaluación de lenguaje
+## 9. Lenguaje: Go
 
-Se evalúa **Go** contra **Python**. Criterios, en orden:
+Decidido. Motivos, en orden:
 
-1. **Distribución**: Go deja un binario único sin intérprete; Python necesita el del sistema.
-2. **Dependencias**: con `kdialog`/`zenity`/`notify-send` por `exec`, Go no necesita librerías
-   externas ni cgo; `net/http` y `encoding/json` cubren el transporte.
-3. **Bandeja del sistema**: el único punto donde Go paga un precio — StatusNotifierItem va por
-   D-Bus y exige una librería. Queda para el hito que agregue la bandeja.
-4. **Mantenimiento**: el núcleo es pequeño; la diferencia entre lenguajes pesa poco.
-
-Recomendación: **Go**, siempre que el primer hito se cierre sin bandeja ni D-Bus.
+1. **Distribución**: binario único, sin intérprete ni runtime que instalar.
+2. **Sin dependencias**: `net/http` y `encoding/json` cubren el transporte; `kdialog`,
+   `zenity` y `notify-send` se ejecutan por `os/exec`. Sin cgo.
+3. **Arranque rápido**: el cliente vive en la sesión y debe estar listo al iniciar.
+4. **El precio, dicho de frente**: la bandeja del sistema va por D-Bus (StatusNotifierItem) y
+   ahí sí hará falta una librería. Es el único punto donde Go deja de ser cero-dependencias, y
+   está en el hito que agrega la bandeja, no antes.
 
 ## 10. Decisiones tomadas
 
@@ -187,6 +214,9 @@ Recomendación: **Go**, siempre que el primer hito se cierre sin bandeja ni D-Bu
 | Decisión: **`kdialog`** en Plasma, `zenity` en GNOME | único mecanismo que dibuja botones y persiste |
 | **Cola de a una petición** | N2 |
 | **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
+| **Identidad = usuario de la sesión** | el cliente no administra cuentas |
+| **Autenticación**: sin credenciales o usuario/contraseña | los dos casos que existen hoy |
+| **Lenguaje: Go** | binario único, sin dependencias hasta la bandeja |
 | Repositorio: **`ntfy-desktop`**, producto aislado | se sostiene solo |
 
 ## 11. Preguntas abiertas
