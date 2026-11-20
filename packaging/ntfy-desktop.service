@@ -33,8 +33,9 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
 # The leading dash: a fresh account has no such directories yet, and a missing
-# path must not keep the unit from starting.
-ReadWritePaths=-%h/.config/ntfy-desktop -%h/.local/share/ntfy-desktop
+# path must not keep the unit from starting. The cache is where the history
+# lives; without it here the client runs but cannot remember anything.
+ReadWritePaths=-%h/.config/ntfy-desktop -%h/.local/share/ntfy-desktop -%h/.cache/ntfy-desktop
 
 [Install]
 WantedBy=graphical-session.target

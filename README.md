@@ -124,10 +124,27 @@ the program, and `rm -rf` on that directory is a safe way to start over.
 The store is in place and the command reads it; the daemon does not write to it yet, so the wiring
 of `Store.Add` and `Store.MarkRead` into the subscription is the next step.
 
+## Install
+
+`install.sh` puts everything in `~/.local` without root: the binary, the menu entry, the icons and
+the user unit, which it also enables.
+
+```sh
+make build
+./install.sh              # binary, menu entry, icons and the user service
+./install.sh --bin-only   # just the binary, nothing else
+./install.sh --dry-run    # prints what it would do
+./install.sh --uninstall  # removes what it installed, leaves the configuration alone
+```
+
+The unit is written with the real path of the installed binary, so a `--prefix` other than
+`~/.local` still starts. If the script runs where there is no user bus — over SSH, for instance —
+it leaves the unit in place and prints the two commands that enable it from the session.
+
 ## Run with the session
 
-`packaging/ntfy-desktop.service` is a user unit: it starts with the graphical session, restarts the
-client if it aborts, and leaves a journal behind.
+The unit starts with the graphical session, restarts the client if it aborts, and leaves a journal
+behind. `install.sh` installs and enables it; done by hand it is:
 
 ```sh
 install -Dm644 packaging/ntfy-desktop.service ~/.config/systemd/user/ntfy-desktop.service
@@ -136,9 +153,11 @@ systemctl --user enable --now ntfy-desktop.service
 journalctl --user -u ntfy-desktop -f
 ```
 
-A packaged install puts the same file in `/usr/lib/systemd/user/`. A daemon that cannot read its
-configuration exits with status 1 and says why in the journal; systemd retries a few times and then
-gives up instead of looping.
+The unit runs with `ProtectHome=read-only`, so it writes only where the client needs to:
+`~/.config/ntfy-desktop` (configuration), `~/.local/share/ntfy-desktop` and `~/.cache/ntfy-desktop`
+(the history). A packaged install puts the same file in `/usr/lib/systemd/user/`. A daemon that
+cannot read its configuration exits with status 1 and says why in the journal; systemd retries a
+few times and then gives up instead of looping.
 
 ## Configuration
 
