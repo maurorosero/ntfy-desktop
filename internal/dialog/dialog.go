@@ -99,15 +99,33 @@ type choice struct {
 // action can collide with it.
 const dismissTag = "0"
 
-// choices numbers the actions and closes the list with the way out. The list
-// always carries our own "Dismiss" entry: KDE's and GTK's buttons are
-// localized by the desktop, in the desktop's language, not in ours.
-func choices(tr Translator, actions []ntfy.Action) []choice {
+// choices numbers the actions and, when the tool answers through a list,
+// closes it with the way out. withDismiss is false when the dialog already has
+// a cancel button with our own label: writing "Dismiss" twice asks the same
+// thing two ways.
+func choices(tr Translator, actions []ntfy.Action, withDismiss bool) []choice {
 	out := make([]choice, 0, len(actions)+1)
 	for i, a := range actions {
 		out = append(out, choice{tag: strconv.Itoa(i + 1), label: action.Label(a)})
 	}
+	if !withDismiss {
+		return out
+	}
 	return append(out, choice{tag: dismissTag, label: tr.T("Dismiss")})
+}
+
+// iconFor picks the window icon the desktop already ships, so the dialog says
+// how urgent it is before the person reads it. A message without a priority
+// gets the neutral one: 0 means unset, not urgent and not quiet.
+func iconFor(priority int) string {
+	switch {
+	case priority >= 4:
+		return "dialog-warning"
+	case priority >= 1 && priority <= 2:
+		return "dialog-information"
+	default:
+		return "dialog-question"
+	}
 }
 
 // resolve turns the tag the tool printed into the label of the action.
