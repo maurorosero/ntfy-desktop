@@ -1,7 +1,12 @@
 # ntfy-desktop — alcance
 
-Cliente de escritorio para recibir avisos y pedidos de decisión por ntfy, y responderlos
-desde el escritorio de Plasma sin abrir un navegador.
+**Producto**: un cliente de ntfy para escritorio Linux.
+
+Se conecta a un servidor ntfy, muestra los mensajes como notificaciones nativas, permite
+actuar sobre ellos y publicar mensajes. Producto aislado: no depende de ninguna instalación
+concreta —servidor, topic y credenciales entran por configuración—.
+
+**Plataforma inicial**: KDE Plasma y derivadas. GNOME y derivadas: evaluable, ver §4.
 
 Estado: **borrador para revisión**. No hay código todavía.
 
@@ -9,105 +14,218 @@ Estado: **borrador para revisión**. No hay código todavía.
 
 ## 1. Problema
 
-Los pedidos de decisión (aprobar un restore, confirmar una acción, autorizar un gasto) llegan
-por chat o por correo, y se pierden entre el resto. No hay forma de resolverlos desde el
-escritorio, ni de saber que quedaron pendientes.
+ntfy tiene cliente web, aplicación móvil y CLI, pero **no tiene cliente de escritorio** para
+Linux. Quien trabaja en el escritorio tiene que abrir un navegador para leer un mensaje, y no
+puede actuar sobre él sin salir de donde está.
 
 ## 2. Qué hace
 
-1. Se suscribe a un topic de ntfy y escucha el stream de mensajes.
-2. Cada mensaje genera un **aviso** en el escritorio.
-3. Si el mensaje trae acciones, además abre un **diálogo** con las opciones.
-4. La opción elegida se devuelve al emisor.
-5. Lo que no se contestó queda **pendiente y recuperable**.
+1. Se conecta a un servidor ntfy y se suscribe a uno o más topics.
+2. Cada mensaje se muestra como **notificación del escritorio**.
+3. Muestra el contenido: título, cuerpo, prioridad, etiquetas, adjuntos.
+4. Si el mensaje trae **acciones**, abre un diálogo con esas opciones y devuelve la respuesta.
+5. Permite **publicar** mensajes en un topic.
+6. Guarda historial local: lo que llegó mientras no mirabas no se pierde.
 
 ## 3. Qué no hace
 
-- No reemplaza a la app de ntfy del teléfono.
-- No publica mensajes: sólo escucha y responde.
-- No administra usuarios ni topics del servidor.
-- No cifra ni descifra contenido.
+- No es un servidor ntfy ni lo administra.
+- No reemplaza al cliente móvil ni al web: convive con ellos.
+- No cifra contenido.
 - No funciona sin sesión gráfica.
 
-## 4. Requisitos
+## 4. Plataformas
 
-| # | Requisito | Origen |
+| Entorno | Estado | Cómo |
 |---|---|---|
-| R1 | Recibir mensajes sin abrir navegador | requisito del usuario |
-| R2 | Aviso visible en el escritorio | requisito del usuario |
-| R3 | Poder **decidir** desde el aviso | requisito del usuario |
-| R4 | La petición no se pierde si estoy trabajando | requisito del usuario |
-| R5 | Sólo una ventana de decisión a la vez | prueba: dos diálogos se apilan y la primera queda tapada |
-| R6 | Reconectar y recuperar lo que llegó mientras estaba apagado | diseño |
-| R7 | Las credenciales no viven en el código: se leen de configuración o del entorno | requisito de producto |
+| KDE Plasma y derivadas (Kubuntu, KDE neon) | **inicial** | `kdialog` para diálogos, `notify-send` para avisos |
+| GNOME y derivadas (Ubuntu, Fedora Workstation) | evaluable | `zenity` para diálogos; falta máquina de prueba |
+| Otros (XFCE, Cinnamon, Sway) | fuera de alcance por ahora | — |
 
-Todo lo que identifica a una instalación concreta —servidor, topic, credenciales, rutas—
-entra por **configuración**, nunca en el código ni en la documentación del producto.
+**Detección en ejecución, no un producto por librería.** El producto no enlaza Qt ni GTK:
+delega el diálogo en la herramienta del escritorio.
 
-## 5. Hechos verificados que condicionan el diseño
+```
+KDE    → kdialog
+GNOME  → zenity
+otro   → el que exista (zenity suele estar en ambos)
+```
 
-Todo lo siguiente se probó en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
+Una sola compilación, y se evita enlazar dos toolkits (dos bucles de eventos, bindings frágiles).
+
+## 5. Funcionalidades de un cliente ntfy
+
+Inventario según la documentación de ntfy (`docs.ntfy.sh/subscribe/api`, `docs.ntfy.sh/publish`).
+La columna Estado define qué entra en cada hito.
+
+### 5.1 Suscripción
+
+| Función | Estado |
+|---|---|
+| Stream JSON por HTTP (`/topic/json`) | **núcleo** |
+| Autenticación con token y con usuario/contraseña | **núcleo** |
+| Reconexión con espera creciente | **núcleo** |
+| Recuperar lo perdido (`since=<id>`) | **núcleo** |
+| Varios topics a la vez | siguiente |
+| Filtros del servidor: `id`, `message`, `title`, `priority`, `tags` | siguiente |
+| Poll y último mensaje (`poll=1`, `since=latest`) | siguiente |
+| SSE y WebSocket | después |
+| Mensajes programados (`scheduled=1`) | después |
+
+### 5.2 Mensajes
+
+| Función | Estado |
+|---|---|
+| Título, cuerpo, prioridad, etiquetas, hora, topic | **núcleo** |
+| Abrir el enlace del mensaje (`click`) | **núcleo** |
+| Historial local y estado leído/no leído | siguiente |
+| Markdown en el cuerpo | siguiente |
+| Adjuntos: mostrar, descargar, abrir | siguiente |
+| Icono propio del mensaje (`icon`) | después |
+| Secuencia (`X-Sequence-ID`): actualizar o borrar un aviso | después |
+| Búsqueda en el historial | después |
+
+### 5.3 Acciones
+
+| Función | Estado |
+|---|---|
+| Mostrar las acciones que trae el mensaje | **núcleo** |
+| Acción `view`: abrir una URL | **núcleo** |
+| Acción `http`: llamar una URL (aprobar/rechazar) | **núcleo** |
+| Caducidad de una petición de decisión | **núcleo** |
+| Responder publicando en un topic de respuesta | evaluable (§11) |
+| Acción `broadcast`: reenviar a otros dispositivos | después |
+| `inline-reply`: responder texto desde el aviso | evaluable (no funciona en Plasma) |
+
+### 5.4 Publicación
+
+| Función | Estado |
+|---|---|
+| Enviar mensaje: cuerpo y título | siguiente |
+| Prioridad, etiquetas, enlace, markdown | siguiente |
+| Adjunto por URL (`attach`) | siguiente |
+| Adjunto por archivo (subida) | después |
+| Entrega programada (`X-Delay`) | después |
+| Acciones incluidas en el mensaje publicado | después |
+
+### 5.5 El cliente
+
+| Función | Estado |
+|---|---|
+| Configuración: servidor, topic, credenciales | **núcleo** |
+| Registro de diagnóstico | **núcleo** |
+| Arranque con la sesión (servicio de usuario) | siguiente |
+| Ajustes por topic: silenciar, prioridad mínima | siguiente |
+| Varios perfiles de servidor | después |
+| Bandeja del sistema | después (requiere D-Bus) |
+
+## 6. Requisitos no funcionales
+
+| # | Requisito |
+|---|---|
+| N1 | Un mensaje aparece como aviso en menos de 5 segundos |
+| N2 | Nunca hay dos diálogos de decisión abiertos a la vez |
+| N3 | Cerrar un diálogo sin responder no descarta la petición |
+| N4 | Las credenciales no viven en el código: configuración o entorno |
+| N5 | El producto no conoce ninguna instalación concreta |
+| N6 | Sin dependencias más allá de las herramientas del escritorio |
+| N7 | Sin conexión: reintenta y recupera al volver |
+
+## 7. Hechos verificados que condicionan el diseño
+
+Probados en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
 
 - **La notificación del sistema no dibuja botones.** Las acciones se envían y el servidor
   anuncia la capacidad `actions`, pero no se renderizan. Por eso la decisión no va por ahí.
-- **`expire_timeout = 0` cierra la notificación al instante.** El popup usa el valor como
-  intervalo de su temporizador. Las notificaciones llevan un timeout explícito, nunca 0.
-- **`kdialog` sí dibuja botones nativos y no expira.** Quedó abierto 40 s hasta que lo mató
-  un timeout externo. Es la superficie de decisión.
-- **Dos `kdialog` a la vez se apilan**: la segunda tapa a la primera y la primera se pierde.
-  De ahí R5.
-- **Con un panel del sistema abierto, Plasma retiene los avisos.** No es un fallo a corregir,
-  pero explica avisos que "no aparecen".
+- **`expire_timeout = 0` cierra la notificación al instante**: el popup usa ese valor como
+  intervalo de su temporizador. Los avisos llevan timeout explícito, nunca 0.
+- **`kdialog` dibuja botones nativos y no expira**: quedó abierto 40 s hasta que lo mató un
+  timeout externo. Es la superficie de decisión.
+- **Dos `kdialog` a la vez se apilan**: la segunda tapa a la primera. De ahí N2.
+- **Con un panel del sistema abierto, Plasma retiene los avisos.**
 
-## 6. Decisiones tomadas
+## 8. Arquitectura propuesta
+
+```
+        ntfy (HTTP)
+            │  stream JSON
+      ┌─────▼─────┐
+      │   núcleo  │  suscripción · cola · historial · publicación
+      └─────┬─────┘
+            │  interfaz de adaptador
+      ┌─────▼─────────────┐
+      │ avisar · decidir  │
+      └─────┬─────────────┘
+       KDE  │  GNOME
+    kdialog │  zenity
+ notify-send│ notify-send
+```
+
+El núcleo no sabe qué escritorio hay. El adaptador se elige una vez al arrancar y expone tres
+operaciones: `avisar`, `decidir`, `bandeja`.
+
+## 9. Evaluación de lenguaje
+
+Se evalúa **Go** contra **Python**. Criterios, en orden:
+
+1. **Distribución**: Go deja un binario único sin intérprete; Python necesita el del sistema.
+2. **Dependencias**: con `kdialog`/`zenity`/`notify-send` por `exec`, Go no necesita librerías
+   externas ni cgo; `net/http` y `encoding/json` cubren el transporte.
+3. **Bandeja del sistema**: el único punto donde Go paga un precio — StatusNotifierItem va por
+   D-Bus y exige una librería. Queda para el hito que agregue la bandeja.
+4. **Mantenimiento**: el núcleo es pequeño; la diferencia entre lenguajes pesa poco.
+
+Recomendación: **Go**, siempre que el primer hito se cierre sin bandeja ni D-Bus.
+
+## 10. Decisiones tomadas
 
 | Decisión | Motivo |
 |---|---|
-| Transporte: **ntfy**, con la URL del servidor por configuración | protocolo abierto; funciona contra cualquier instancia, propia o pública |
-| Topic y credenciales: **por configuración** (archivo o entorno) | el producto no conoce ninguna instalación concreta |
-| Aviso: **notificación del sistema** con timeout explícito | no roba el foco |
-| Decisión: **`kdialog --yesnocancel`** | único mecanismo que dibuja botones y persiste |
-| **Cola de a una petición** | R5 |
-| Lenguaje: **Python, sólo biblioteca estándar** | sin dependencias que instalar |
-| Repositorio: **`ntfy-desktop`**, producto aislado | se sostiene solo; no depende de nada de la casa |
+| Transporte: **ntfy**, URL del servidor por configuración | protocolo abierto; cualquier instancia |
+| Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
+| Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
+| Decisión: **`kdialog`** en Plasma, `zenity` en GNOME | único mecanismo que dibuja botones y persiste |
+| **Cola de a una petición** | N2 |
+| **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
+| Repositorio: **`ntfy-desktop`**, producto aislado | se sostiene solo |
 
-## 7. Preguntas abiertas
+## 11. Preguntas abiertas
 
-1. **Cómo vuelve la respuesta.** Dos caminos posibles:
-   - publicar en un topic de respuesta, o
-   - llamar una URL que venga en la acción (`http`).
-   El primero no exige exponer nada; el segundo es el estándar de ntfy.
-2. **Qué pasa cuando el emisor espera y nadie contesta.** ¿Vence? ¿Se reintenta?
-3. **Arranque**: ¿con la sesión gráfica, o como servicio de usuario siempre activo?
-4. **Instalación**: script propio, paquete, o copia manual.
-5. **Qué se ve cuando hay 3 pendientes**: ¿se abren en serie, o un solo diálogo que lista?
+1. **Cómo vuelve la respuesta**: publicar en un topic de respuesta, o llamar la URL de la
+   acción `http`. El primero no exige exponer nada; el segundo es el estándar de ntfy.
+2. **Qué pasa cuando el emisor espera y nadie contesta**: ¿vence? ¿se reintenta?
+3. **Verificación en GNOME**: falta una máquina para probar `zenity` y las notificaciones.
+4. **Adjuntos**: ¿descargar y abrir, o abrir la URL en el navegador?
+5. **Historial local**: ¿cuántos mensajes y dónde se guardan?
 
-## 8. Hitos
+## 12. Hitos
 
 Sin fechas. Cada hito se cierra cuando se puede probar.
 
-1. **Lectura**: conecta al topic, imprime los mensajes que llegan. Sin interfaz.
-2. **Aviso**: notificación por cada mensaje, con timeout correcto.
-3. **Decisión**: diálogo con opciones, respuesta publicada.
-4. **Cola**: una petición a la vez, con contador.
-5. **Resiliencia**: reconexión, catch-up por `since`, arranque con la sesión.
-6. **Instalación**: unit de systemd de usuario y `.desktop`.
+1. **Lectura**: conecta, se suscribe, imprime los mensajes. Sin interfaz.
+2. **Aviso**: notificación por mensaje, con prioridad y timeout correctos.
+3. **Decisión**: acciones visibles, diálogo, respuesta publicada, cola de a una.
+4. **Resiliencia**: reconexión con `since`, arranque con la sesión.
+5. **Historial**: guardar lo recibido, leer, marcar.
+6. **Publicación**: enviar mensajes desde el escritorio.
+7. **Portabilidad**: adaptador de GNOME verificado en una máquina real.
 
-## 9. Criterios de aceptación
+## 13. Criterios de aceptación
 
-- Un mensaje publicado en el topic aparece como aviso en menos de 5 segundos.
+- Un mensaje aparece como aviso en menos de 5 segundos.
 - Un mensaje con acciones abre un diálogo con las opciones exactas que trae.
 - Elegir una opción publica la respuesta correcta y cierra el diálogo.
-- Con dos peticiones seguidas, nunca hay dos diálogos abiertos.
-- Apagar y encender la laptop no pierde las peticiones pendientes.
-- El token nunca aparece en el código ni en los logs.
+- Con dos peticiones seguidas nunca hay dos diálogos abiertos.
+- Apagar y encender la máquina no pierde las peticiones pendientes.
+- El token nunca aparece en el código ni en los registros.
 
-## 10. Riesgos
+## 14. Riesgos
 
-- **Dependencia de la sesión gráfica**: sin sesión no hay diálogo. Los pendientes se acumulan.
-- **El servidor ntfy es un punto único**: si el servidor cae, no hay avisos.
-- **Los tokens dan acceso al topic completo**: un token filtrado permite publicar y leer.
+- **Dependencia de la sesión gráfica**: sin sesión no hay diálogo; los pendientes se acumulan.
+- **El servidor ntfy es un punto único**: si cae, no hay avisos.
+- **Los tokens dan acceso al topic completo**: uno filtrado permite publicar y leer.
 - **Plasma puede cambiar** su comportamiento en notificaciones entre versiones.
+- **GNOME sin verificar**: hasta probarlo, el soporte es una intención, no un hecho.
 
 ---
 
