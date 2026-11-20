@@ -188,6 +188,27 @@ tools/changelog.sh prepare v0.1.0   # builds the section, removes the used fragm
 CI enforces it: a pull request to `devs` reports pending fragments; a pull request to `main`
 **fails** if `CHANGELOG.md` did not change against `main`.
 
+## Preparing a release
+
+The mechanical part is the repository's job; the editorial part is an agent's task.
+
+```sh
+tools/release-prep.sh v0.2.0    # dossier: fragments, commits, files, docs to review
+```
+
+With that dossier the agent does three things, in order:
+
+1. **Write the changelog** from the user's point of view: what the program can do now, or what
+   stopped breaking. No internal jargon, no commit hashes, nothing that the fragments and the
+   diff do not support.
+2. **Update the documentation** that actually changed — scope, process, dependencies. If nothing
+   changed, say so and leave it.
+3. **Update the README** only if what the program does, how it is installed or how it is
+   configured changed. The README describes the real state: a feature that does not exist yet is
+   not announced.
+
+Then `tools/changelog.sh prepare v0.2.0`, `make check`, signed commit.
+
 ## Reporting bugs
 
 Use the issue template. Include:

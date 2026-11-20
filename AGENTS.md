@@ -321,6 +321,34 @@ git push origin devs                # y después el PR devs → main
 CI lo hace cumplir: en un PR a `devs` informa los fragmentos pendientes; en un PR a `main`
 **falla** si `CHANGELOG.md` no cambió respecto de `main`.
 
+## 8.4 Preparar un release — tarea del agente
+
+La parte mecánica la hace el repo; la editorial la hace el agente.
+
+```sh
+tools/release-prep.sh v0.2.0
+```
+
+Eso arma `.changes/release-0.2.0.md` (ignorado por git) con: fragmentos pendientes, commits
+desde el último tag, archivos tocados y la lista de documentos a revisar. Con ese expediente, el
+agente hace **tres tareas**, en este orden:
+
+1. **Escribir el changelog.** Desde el punto de vista de quien usa el programa: qué puede hacer
+   ahora que antes no, o qué dejó de romperse. Sin jerga interna, sin hashes de commit, sin
+   inventar nada que no esté en los fragmentos o en el diff. Una línea por cambio; dos como
+   máximo si hace falta contexto. Los cambios internos no entran.
+2. **Actualizar la documentación.** Sólo la que de verdad cambió: `plan/alcance.md` si cambió el
+   alcance o una decisión, `AGENTS.md`/`CONTRIBUTING.md` si cambió el proceso, `NOTICE` si cambió
+   una dependencia. Si nada cambió, se dice y no se toca.
+3. **Actualizar el README.** Sólo si cambió lo que el programa hace, cómo se instala o cómo se
+   configura. El README describe el estado real: si una función todavía no existe, no se anuncia
+   como si existiera.
+
+Después: `tools/changelog.sh prepare v0.2.0`, `make check`, commit firmado.
+
+**Regla que no se negocia**: el agente no inventa funciones. Si el expediente no lo respalda, no
+va al changelog ni al README.
+
 ## 9. Comandos
 
 ```sh
@@ -341,6 +369,8 @@ tools/hooks/spdx.sh       cabeceras de licencia
 tools/hooks/dco.sh        firmas de commit
 tools/hooks/gitleaks.sh   secretos (si gitleaks está instalado)
 tools/repo-meta.sh        sincroniza Description y temas del repositorio remoto
+tools/changelog.sh        fragmentos y sección de versión del changelog
+tools/release-prep.sh     expediente de release para que el agente escriba
 ```
 
 ---
