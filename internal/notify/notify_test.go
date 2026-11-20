@@ -125,11 +125,12 @@ func newTestNotifier(t *testing.T, s sender, o opener, tr *i18n.Translator) (*DB
 		tr = i18n.New("en")
 	}
 	return &DBus{
-		send:  s,
-		open:  o,
-		log:   slog.New(logs),
-		tr:    tr,
-		links: make(map[uint32]string),
+		send:    s,
+		open:    o,
+		log:     slog.New(logs),
+		tr:      tr,
+		sending: make(chan struct{}, 1),
+		links:   make(map[uint32]string),
 	}, logs
 }
 
@@ -284,6 +285,62 @@ func TestShowSendsTheMessage(t *testing.T) {
 	if note.ExpireTimeout != 60*time.Second {
 		t.Errorf("ExpireTimeout = %v; want 60s", note.ExpireTimeout)
 	}
+}
+
+// hungSender never answers, the way a notification service that stopped
+// responding does. It holds the send until the test releases it.
+type hungSender struct {
+	started chan struct{}
+	release chan struct{}
+}
+
+func newHungSender() *hungSender {
+	return &hungSender{started: make(chan struct{}, 1), release: make(chan struct{})}
+}
+
+func (h *hungSender) SendNotification(dbusnotify.Notification) (uint32, error) {
+	h.started <- struct{}{}
+	<-h.release
+	return 0, errors.New("the service came back")
+}
+
+// TestShowGivesUpWhenTheContextEnds is the shutdown guarantee: a hung
+// notification service cannot keep the caller past its cancellation.
+func TestShowGivesUpWhenTheContextEnds(t *testing.T) {
+	h := newHungSender()
+	d, _ := newTestNotifier(t, h, nil, nil)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- d.Show(ctx, ntfy.Message{ID: "m1", Event: ntfy.EventMessage, Message: "hola"})
+	}()
+
+	select {
+	case <-h.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the notification was never sent")
+	}
+
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("Show() after the cancellation = %v; want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Show() kept waiting for a service that never answered")
+	}
+
+	// The hung send still holds the one place, so the next one is refused
+	// instead of piling up behind it.
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel2()
+	if err := d.Show(ctx2, ntfy.Message{ID: "m2", Event: ntfy.EventMessage}); !errors.Is(err, errBusy) {
+		t.Errorf("Show() while the service is hung = %v; want errBusy", err)
+	}
+
+	close(h.release) // let the goroutine of the first send end
 }
 
 func TestShowSkipsEventsThatAreNotMessages(t *testing.T) {

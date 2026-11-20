@@ -106,6 +106,7 @@ msgstr "unsupported key"
 #: internal/notify/notify.go
 msgid "Open"
 msgstr "Open"
+
 #: internal/dialog/dialog.go
 msgid "Decision"
 msgstr "Decision"
@@ -129,3 +130,35 @@ msgstr "Select"
 #: internal/dialog/zenity.go
 msgid "Action"
 msgstr "Action"
+
+#: internal/config/config.go
+msgid "must be debug, info, warn or error"
+msgstr "must be debug, info, warn or error"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "usage: ntfy-desktop [command] [flags]"
+msgstr "usage: ntfy-desktop [command] [flags]"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "run until stopped: subscribe, notify and ask for decisions"
+msgstr "run until stopped: subscribe, notify and ask for decisions"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "log level: debug, info, warn or error (default: info)"
+msgstr "log level: debug, info, warn or error (default: info)"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unexpected argument %q"
+msgstr "unexpected argument %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "cannot run %q and %q at once"
+msgstr "cannot run %q and %q at once"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unknown command %q"
+msgstr "unknown command %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "invalid log level %q: use debug, info, warn or error"
+msgstr "invalid log level %q: use debug, info, warn or error"

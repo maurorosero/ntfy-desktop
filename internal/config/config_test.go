@@ -48,6 +48,16 @@ func TestParseValid(t *testing.T) {
 			in:   "server = \"http://localhost:2586\"\ntopic = \"alerts\"\nuser = \"u\"\npassword = \"a\\\"b\\\\c d\"\n",
 			want: Config{ServerURL: "http://localhost:2586", Topic: "alerts", User: "u", Password: "a\"b\\c d"},
 		},
+		{
+			name: "log level",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nlog-level = \"debug\"\n",
+			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts", LogLevel: "debug"},
+		},
+		{
+			name: "log level in another case",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nlog-level = \"WARN\"\n",
+			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts", LogLevel: "WARN"},
+		},
 	}
 
 	for _, c := range cases {
@@ -128,6 +138,11 @@ func TestParseErrors(t *testing.T) {
 			name:    "password with a control character",
 			in:      "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nuser = \"andrea\"\npassword = \"a\\tb\"\n",
 			wantMsg: "password: must not contain control characters",
+		},
+		{
+			name:    "unknown log level",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nlog-level = \"trace\"\n",
+			wantMsg: "log-level: must be debug, info, warn or error",
 		},
 		{
 			name:    "line without assignment",

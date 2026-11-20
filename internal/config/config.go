@@ -37,6 +37,7 @@ const (
 	keyTopic    = "topic"
 	keyUser     = "user"
 	keyPassword = "password"
+	keyLogLevel = "log-level"
 )
 
 // User-facing messages. They are gettext msgids in English; the wiring layer
@@ -50,11 +51,22 @@ const (
 	msgNoControl     = "must not contain control characters"
 	msgNeedsUser     = "requires a user name"
 	msgNeedsPassword = "requires a password"
+	msgLogLevel      = "must be debug, info, warn or error"
 )
 
 // topics follow the ntfy rules: up to 64 characters, letters, digits, dashes
 // and underscores.
 var topicPattern = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`)
+
+// logLevels are the names the configuration accepts for the log. They are the
+// four of log/slog an operator has a use for; the wiring maps them, so nothing
+// here depends on that package.
+var logLevels = map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
+
+// validLogLevel reports whether name is one of the levels the program logs at.
+func validLogLevel(name string) bool {
+	return logLevels[strings.ToLower(strings.TrimSpace(name))]
+}
 
 // AuthMode is how the client authenticates against the ntfy server.
 type AuthMode int
@@ -84,6 +96,7 @@ type Config struct {
 	Topic     string
 	User      string
 	Password  string
+	LogLevel  string // "" when the file does not set one, so the program decides
 }
 
 // AuthMode reports how the client has to authenticate: HTTP Basic when the
@@ -98,8 +111,8 @@ func (c Config) AuthMode() AuthMode {
 // String implements fmt.Stringer without the password, so a configuration can
 // be logged or printed without leaking the secret.
 func (c Config) String() string {
-	return fmt.Sprintf("config{server: %s, topic: %s, user: %q, auth: %s}",
-		c.ServerURL, c.Topic, c.User, c.AuthMode())
+	return fmt.Sprintf("config{server: %s, topic: %s, user: %q, auth: %s, level: %q}",
+		c.ServerURL, c.Topic, c.User, c.AuthMode(), c.LogLevel)
 }
 
 // DefaultPath returns the configuration file of the current user.
@@ -181,6 +194,10 @@ func (c *Config) validate() error {
 	}
 	if hasControl(c.Password) {
 		return &ValidationError{Field: keyPassword, Msg: msgNoControl}
+	}
+
+	if c.LogLevel != "" && !validLogLevel(c.LogLevel) {
+		return &ValidationError{Field: keyLogLevel, Msg: msgLogLevel}
 	}
 
 	// Half a pair is a mistake, not an intent: say which key is missing instead

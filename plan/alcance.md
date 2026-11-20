@@ -98,10 +98,11 @@ entra en ese subconjunto se rechaza con el número de línea: una clave mal escr
 silencio.
 
 ```toml
-server   = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
-topic    = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-]
-user     = "andrea"                     # opcional, junto con password
-password = "…"                          # opcional, junto con user
+server    = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
+topic     = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-]
+user      = "andrea"                     # opcional, junto con password
+password  = "…"                          # opcional, junto con user
+log-level = "info"                       # opcional: debug, info, warn o error
 ```
 
 Sin `user` ni `password` el cliente se suscribe sin credenciales. Las secciones `[tabla]` todavía
@@ -169,8 +170,8 @@ La columna Estado define qué entra en cada hito.
 | Función | Estado |
 |---|---|
 | Configuración: servidor, topic, credenciales | **núcleo** |
-| Registro de diagnóstico | **núcleo** |
-| Arranque con la sesión (servicio de usuario) | siguiente |
+| Registro de diagnóstico con nivel configurable (`log-level`, `--log-level`) | **núcleo** |
+| Arranque con la sesión (servicio de usuario) y cierre limpio con `SIGTERM` | **núcleo** |
 | Ajustes por topic: silenciar, prioridad mínima | siguiente |
 | Varios perfiles de servidor | después |
 | Bandeja del sistema | después (requiere D-Bus) |
