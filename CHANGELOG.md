@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The first delivery attempt stopped before publishing anything: goreleaser only builds from a
+  clean tree, and the release notes were written inside it. They now go outside the work tree,
+  so a tag on `main` reaches the packages without a manual step.
 - zenity exits 1 for its extra button, the same code as its own cancel button, so a rejection on
   GNOME was read as "no answer" and the request stayed pending. The client now sets `ZENITY_EXTRA`
   when it starts the dialog, which zenity reads to give that button its own code.
