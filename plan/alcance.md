@@ -290,6 +290,8 @@ ntfy-desktop/
 ├── assets/              icono (SVG + PNG 64/128/256/512) y banner
 ├── packaging/           .desktop · unit de systemd · (nfpm cuando toque)
 ├── plan/                este documento
+├── about.me             texto del "About" del repositorio remoto
+├── description.me       descripción corta del repositorio remoto
 ├── LICENSE · NOTICE
 ├── go.mod · go.sum
 └── .gitignore · .gitattributes

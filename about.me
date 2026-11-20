@@ -1,0 +1,14 @@
+ntfy-desktop is a client for ntfy on the Linux desktop.
+
+It subscribes to a topic and shows what arrives as native notifications. When a message asks
+for a decision, it opens a desktop dialog with the options that message carries and sends the
+answer back. It also publishes messages, and keeps a local history so nothing is lost while you
+are away from the machine.
+
+It does not link Qt or GTK: dialogs are delegated to the desktop's own tool — kdialog on
+Plasma, zenity on GNOME — chosen at startup. One build, no cgo, a single binary.
+
+KDE Plasma is the supported target today. GNOME is scaffolded and not yet verified.
+Licensed GPL-3.0-or-later.
+
+Topics: ntfy, notifications, desktop, kde, plasma, linux, golang
