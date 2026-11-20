@@ -35,6 +35,8 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 - Internationalization: gettext catalogs (`locales/<lang>/LC_MESSAGES/ntfy-desktop.po`)
   embedded in the binary with `//go:embed`, source language English, Spanish translation,
   fallback chain `es_PA -> es -> en` and `C`/`POSIX` mapping to `en`.
+- `about.me` and `description.me` as the single source for the repository's About and
+  Description; `tools/repo-meta.sh` syncs both (and the topics) to GitHub with `gh`.
 - `install.sh`: installs without root into `~/.local` (or `--prefix`), with `--dry-run` and
   `--uninstall`; warns when the desktop's dialog tool is missing.
 - CI now runs `staticcheck` and a DCO check on pull requests; `tools/hooks/dco.sh` verifies

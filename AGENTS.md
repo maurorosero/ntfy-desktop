@@ -218,6 +218,16 @@ Un cambio está terminado cuando:
 
 ---
 
+## 8.1 Metadatos del repositorio
+
+El **About del repositorio sale de `about.me`**, y el campo *Description* de `description.me`.
+Son la fuente de verdad: si cambia el texto, se corre `tools/repo-meta.sh` y el remoto queda
+igual. No se edita el About en la web sin actualizar el archivo.
+
+- `description.me` — una sola línea, máximo 350 caracteres (lo que GitHub acepta).
+- `about.me` — el texto del About; su última línea `Topics: a, b, c` define los temas.
+- `tools/repo-meta.sh --dry-run` muestra qué aplicaría; sin `--dry-run` aplica con `gh`.
+
 ## 9. Comandos
 
 ```sh
@@ -237,6 +247,7 @@ tools/hooks/gofmt.sh      formato
 tools/hooks/spdx.sh       cabeceras de licencia
 tools/hooks/dco.sh        firmas de commit
 tools/hooks/gitleaks.sh   secretos (si gitleaks está instalado)
+tools/repo-meta.sh        sincroniza Description y temas del repositorio remoto
 ```
 
 ---

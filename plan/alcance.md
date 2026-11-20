@@ -331,8 +331,8 @@ ntfy-desktop/
 ├── packaging/           .desktop · unit de systemd · (nfpm cuando toque)
 ├── plan/                este documento
 ├── AGENTS.md            lineamientos para agentes: ciclo de desarrollo y reglas de Go
-├── about.me             texto del "About" del repositorio remoto
-├── description.me       descripción corta del repositorio remoto
+├── about.me             fuente del "About" del repositorio remoto (y sus topics)
+├── description.me       fuente del campo Description del repositorio remoto
 ├── LICENSE · NOTICE
 ├── go.mod · go.sum
 └── .gitignore · .gitattributes
