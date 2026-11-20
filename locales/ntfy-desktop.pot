@@ -39,3 +39,67 @@ msgstr ""
 #: cmd/ntfy-desktop/main.go
 msgid "prints the version and exits"
 msgstr ""
+
+#: internal/config/config.go
+msgid "must not be empty"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must be an http or https URL"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not have a query or a fragment"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must be 1 to 64 characters of letters, digits, dashes or underscores"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not contain a colon"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not contain control characters"
+msgstr ""
+
+#: internal/config/config.go
+msgid "requires a user name"
+msgstr ""
+
+#: internal/config/config.go
+msgid "requires a password"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "expected key = value"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "invalid key"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "value must be a quoted string"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unexpected text after the closing quote"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "invalid escape sequence"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unterminated quoted value"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "duplicate key"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unsupported key"
+msgstr ""
