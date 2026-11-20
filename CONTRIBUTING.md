@@ -144,16 +144,21 @@ git branch -d feat/something
 ```sh
 gh pr create --base main --head devs --title "..." --body "..."
 gh pr checks <n>           # the four checks must be green
-gh pr merge <n> --rebase
+gh pr merge <n> --merge        # a merge commit marks the release
+git switch main && git pull && git tag -a v0.x.y -m "..." && git push origin v0.x.y
 ```
+
+Releases land with a **merge commit**, not a rebase. Each release is then an explicit, immutable
+point on `main`, `devs` is always its ancestor, and no post-release sync is needed.
+`git log --first-parent main` shows the release line.
 
 `main` is protected: no direct pushes, not even for the owner, linear history, no force-push.
 
 ### Rules
 
 - **Never push to `main`.** Anything that has to land there goes through a PR from `devs`.
-- **`devs` stays ahead of `main`.** If `main` ever receives something out of band, merge it into
-  `devs`; never rewrite `devs`.
+- **`devs` is always an ancestor of `main`**: releases land with a merge commit, so there is no
+  divergence and no post-release sync. Never rewrite `devs`.
 - **Run `make check` before pushing to `devs`.** CI runs on the push but does not block; a red
   `devs` is the first thing to fix.
 - **Merge commits and bot commits are not signed.** The DCO check ignores them (`--no-merges`,
