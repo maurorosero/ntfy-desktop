@@ -1,0 +1,18 @@
+Package: ntfy-desktop
+Version: 0.2.0
+Architecture: amd64
+Maintainer: Mauro Rosero <mauro@rosero.one>
+Installed-Size: 8096
+Recommends: kdialog, zenity
+Filename: apt/pool/main/n/ntfy-desktop/ntfy-desktop_0.2.0_linux_amd64.deb
+Size: 3547830
+MD5sum: 0aa3c8b5743ffe835a46786c7d0edf15
+SHA1: 83c17f5b3a74d0718cdd1a0997415c619f6ef7f5
+SHA256: 9c395d1aea884deb04a34fcc3413a152b83cf0a6ad9641daa10806f2a570bb61
+Section: utils
+Priority: optional
+Homepage: https://github.com/maurorosero/ntfy-desktop
+Description: An ntfy client for the Linux desktop.
+ Subscribes to a topic, shows what arrives as native notifications and asks
+ for decisions through the desktop's own dialog.
+
