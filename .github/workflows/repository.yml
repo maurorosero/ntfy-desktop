@@ -1,0 +1,206 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Los paquetes de cada release quedan además en un repositorio apt y otro rpm,
+# servidos por GitHub Pages desde la rama gh-pages de este mismo repositorio:
+#
+#   apt  https://maurorosero.github.io/ntfy-desktop/apt   (stable main)
+#   rpm  https://maurorosero.github.io/ntfy-desktop/rpm
+#
+# Se dispara cuando se publica un release, y a mano para reconstruir el índice
+# después de agregar o quitar una versión. El índice se arma sobre lo que ya hay
+# en gh-pages más los paquetes del release, así que las versiones viejas siguen
+# instalables.
+name: Repository
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag del release a publicar (por ejemplo v0.2.0)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repository
+  cancel-in-progress: false
+
+env:
+  PAGES_URL: https://maurorosero.github.io/ntfy-desktop
+  SUITE: stable
+  COMPONENT: main
+
+jobs:
+  repositorio:
+    name: apt y rpm
+    runs-on: ubuntu-latest
+    steps:
+      - name: el tag a publicar
+        id: tag
+        env:
+          DESDE_EVENTO: ${{ github.event.release.tag_name }}
+          DESDE_INPUT: ${{ inputs.tag }}
+        run: |
+          tag="${DESDE_EVENTO:-${DESDE_INPUT}}"
+          if [ -z "${tag}" ]; then echo "falta el tag" >&2; exit 1; fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "publicando ${tag}"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: sitio
+        continue-on-error: true
+
+      - name: la rama gh-pages existe
+        run: |
+          if [ ! -d sitio/.git ]; then
+            echo "no hay rama gh-pages todavía: se crea con esta corrida"
+            mkdir -p sitio
+            git -C sitio init -q
+            git -C sitio checkout -q -b gh-pages
+            git -C sitio remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          path: fuentes
+          fetch-depth: 0
+
+      - name: paquetes del release
+        run: |
+          mkdir -p paquetes
+          gh release download "${{ steps.tag.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern '*.deb' --pattern '*.rpm' --pattern 'checksums.txt' \
+            --dir paquetes
+          ls -1 paquetes
+
+      - name: herramientas
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dpkg-dev apt-utils gnupg createrepo-c
+
+      - name: el repositorio se arma sobre lo anterior
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -eu
+          version="${TAG#v}"
+
+          # Estructura del sitio.
+          mkdir -p "sitio/apt/pool/main/n/ntfy-desktop" "sitio/apt/dists/${SUITE}/${COMPONENT}"
+          mkdir -p "sitio/rpm/x86_64" "sitio/rpm/aarch64" "sitio/keys"
+
+          # Paquetes: se copian al pool sin pisar otros (otras versiones se quedan).
+          cp -n paquetes/*.deb "sitio/apt/pool/main/n/ntfy-desktop/" 2>/dev/null || true
+          cp -n paquetes/*amd64.rpm "sitio/rpm/x86_64/" 2>/dev/null || true
+          cp -n paquetes/*arm64.rpm "sitio/rpm/aarch64/" 2>/dev/null || true
+          cp -f paquetes/checksums.txt "sitio/$TAG-checksums.txt" 2>/dev/null || true
+          cp -f fuentes/packaging/apt/repo-key.asc "sitio/keys/repo-key.asc"
+
+          # ---- apt ----
+          for arch in amd64 arm64; do
+            dir="sitio/apt/dists/${SUITE}/${COMPONENT}/binary-${arch}"
+            mkdir -p "${dir}"
+            (
+              cd sitio
+              dpkg-scanpackages --arch "${arch}" apt/pool > "apt/dists/${SUITE}/${COMPONENT}/binary-${arch}/Packages" 2>/dev/null
+            )
+            gzip -9kc "${dir}/Packages" > "${dir}/Packages.gz"
+          done
+
+          (
+            cd "sitio/apt/dists/${SUITE}"
+            apt-ftparchive \
+              -o APT::FTPArchive::Release::Origin="ntfy-desktop" \
+              -o APT::FTPArchive::Release::Label="ntfy-desktop" \
+              -o APT::FTPArchive::Release::Suite="${SUITE}" \
+              -o APT::FTPArchive::Release::Codename="${SUITE}" \
+              -o APT::FTPArchive::Release::Architectures="amd64 arm64" \
+              -o APT::FTPArchive::Release::Components="${COMPONENT}" \
+              -o APT::FTPArchive::Release::Description="ntfy-desktop, an ntfy client for the Linux desktop" \
+              release . > Release
+          )
+
+          # ---- rpm ----
+          for arch in x86_64 aarch64; do
+            createrepo_c --quiet --update "sitio/rpm/${arch}"
+          done
+
+          echo "versión ${version} agregada"
+
+      - name: firmar
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          set -eu
+          export GNUPGHOME="$(mktemp -d)"
+          trap 'rm -rf "${GNUPGHOME}"' EXIT
+
+          printf '%s' "${APT_SIGNING_KEY}" | gpg --batch --import 2>/dev/null
+          fpr="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')"
+          [ -n "${fpr}" ] || { echo "no se importó la llave" >&2; exit 1; }
+
+          # apt: InRelease (firma en claro) y Release.gpg (firma separada).
+          gpg --batch --yes --local-user "${fpr}" --clearsign \
+            -o "sitio/apt/dists/${SUITE}/InRelease" "sitio/apt/dists/${SUITE}/Release"
+          gpg --batch --yes --local-user "${fpr}" --armor --detach-sign \
+            -o "sitio/apt/dists/${SUITE}/Release.gpg" "sitio/apt/dists/${SUITE}/Release"
+
+          # rpm: la firma va sobre repomd.xml de cada arquitectura.
+          for arch in x86_64 aarch64; do
+            gpg --batch --yes --local-user "${fpr}" --armor --detach-sign \
+              -o "sitio/rpm/${arch}/repodata/repomd.xml.asc" "sitio/rpm/${arch}/repodata/repomd.xml"
+          done
+
+          gpg --verify "sitio/apt/dists/${SUITE}/InRelease" >/dev/null 2>&1 &&
+            echo "InRelease verificado"
+          echo "huella de firma: ${fpr}"
+
+      - name: índice del sitio
+        run: |
+          {
+            echo "# ntfy-desktop — repositorio de paquetes"
+            echo
+            echo "## apt (Debian, Ubuntu y derivadas)"
+            echo
+            echo '```sh'
+            echo "sudo install -d -m 0755 /etc/apt/keyrings"
+            echo "curl -fsSL ${PAGES_URL}/keys/repo-key.asc | sudo tee /etc/apt/keyrings/ntfy-desktop.asc >/dev/null"
+            echo "echo \"deb [signed-by=/etc/apt/keyrings/ntfy-desktop.asc] ${PAGES_URL}/apt ${SUITE} ${COMPONENT}\" | sudo tee /etc/apt/sources.list.d/ntfy-desktop.list"
+            echo "sudo apt update && sudo apt install ntfy-desktop"
+            echo '```'
+            echo
+            echo "## rpm (Fedora, openSUSE y derivadas)"
+            echo
+            echo '```sh'
+            echo "sudo curl -fsSL ${PAGES_URL}/keys/repo-key.asc -o /etc/pki/rpm-gpg/RPM-GPG-KEY-ntfy-desktop"
+            echo "sudo dnf config-manager --add-repo ${PAGES_URL}/rpm/<arch>"
+            echo "sudo dnf install ntfy-desktop"
+            echo '```'
+            echo
+            echo "## Versiones publicadas"
+            echo
+            ls -1 sitio/apt/pool/main/n/ntfy-desktop/*.deb 2>/dev/null |
+              sed 's|.*/|- `|; s|$|`|' || echo "- ninguna todavía"
+          } > sitio/index.html
+          cp sitio/index.html sitio/index.md
+
+      - name: publicar en gh-pages
+        run: |
+          cd sitio
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "sin cambios en el repositorio"
+            exit 0
+          fi
+          git commit -q -m "Repositorio: paquetes de ${{ steps.tag.outputs.tag }}"
+          git push -q origin gh-pages
+          echo "publicado en ${PAGES_URL}"

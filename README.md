@@ -62,8 +62,28 @@ No Go installation is needed: `make` uses the toolchain inside the repository.
 
 ## Install
 
-Every release publishes `.deb` and `.rpm` packages for `amd64` and `arm64`, which install the binary
-in `/usr/bin` along with the menu entry, the icons and the user unit:
+Every release publishes an apt and an rpm repository, so the distribution's package manager keeps the
+client up to date:
+
+```sh
+# Debian, Ubuntu and derivatives
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://maurorosero.github.io/ntfy-desktop/keys/repo-key.asc \
+  | sudo tee /etc/apt/keyrings/ntfy-desktop.asc >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/ntfy-desktop.asc] https://maurorosero.github.io/ntfy-desktop/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/ntfy-desktop.list
+sudo apt update && sudo apt install ntfy-desktop
+```
+
+```sh
+# Fedora, openSUSE and derivatives
+sudo curl -fsSL https://maurorosero.github.io/ntfy-desktop/keys/repo-key.asc \
+  -o /etc/pki/rpm-gpg/RPM-GPG-KEY-ntfy-desktop
+sudo dnf config-manager --add-repo https://maurorosero.github.io/ntfy-desktop/rpm/x86_64
+sudo dnf install ntfy-desktop
+```
+
+The `.deb` and `.rpm` files are also attached to each release, for a one-off install:
 
 ```sh
 sudo dpkg -i ntfy-desktop_0.2.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
