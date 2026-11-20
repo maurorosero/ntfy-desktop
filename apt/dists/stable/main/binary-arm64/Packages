@@ -4,7 +4,7 @@ Architecture: arm64
 Maintainer: Mauro Rosero <mauro@rosero.one>
 Installed-Size: 7476
 Recommends: kdialog, zenity
-Filename: apt/pool/main/n/ntfy-desktop/ntfy-desktop_0.2.0_linux_arm64.deb
+Filename: pool/main/n/ntfy-desktop/ntfy-desktop_0.2.0_linux_arm64.deb
 Size: 3211534
 MD5sum: 6e63a9c10b93285effc6f28228e0b47e
 SHA1: 94c72254f9617e3c9d0adb2171c0a8a20cdeca9a

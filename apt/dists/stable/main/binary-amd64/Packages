@@ -4,7 +4,7 @@ Architecture: amd64
 Maintainer: Mauro Rosero <mauro@rosero.one>
 Installed-Size: 8096
 Recommends: kdialog, zenity
-Filename: apt/pool/main/n/ntfy-desktop/ntfy-desktop_0.2.0_linux_amd64.deb
+Filename: pool/main/n/ntfy-desktop/ntfy-desktop_0.2.0_linux_amd64.deb
 Size: 3547830
 MD5sum: 0aa3c8b5743ffe835a46786c7d0edf15
 SHA1: 83c17f5b3a74d0718cdd1a0997415c619f6ef7f5
