@@ -229,23 +229,68 @@ igual. No se edita el About en la web sin actualizar el archivo.
 - `about.me` — el texto del About; su última línea `Topics: a, b, c` define los temas.
 - `tools/repo-meta.sh --dry-run` muestra qué aplicaría; sin `--dry-run` aplica con `gh`.
 
-## 8.2 Flujo de ramas
+## 8.2 Flujo de ramas — obligatorio
 
 ```
 main     lo publicado; tags; sólo recibe merges desde devs
 devs     integración; todo el trabajo llega acá primero
-tema     feat/…, fix/…, docs/…; cortas, se borran al mergear
+tema     feat/…, fix/…, docs/…, chore/…; cortas, se borran al mergear
 ```
+
+`main` y `devs` están protegidas contra push directo, **también para el dueño**. No hay atajos:
+si algo tiene que entrar, entra por PR.
+
+### El ciclo, paso a paso
 
 ```sh
-git switch devs && git pull
-git switch -c fix/algo
-git commit -s
+# 1. partir del estado real de devs, nunca de main
+git fetch origin
+git switch -c fix/algo origin/devs
+
+# 2. trabajar y firmar
+git commit -s -m "…"
+
+# 3. publicar la rama y abrir el PR contra devs
 git push -u origin fix/algo
-gh pr create --base devs
+gh pr create --base devs --title "…" --body "…"
+
+# 4. esperar los checks y mergear (rebase: historial lineal)
+gh pr checks <n>            # cinco en verde
+gh pr merge <n> --rebase --delete-branch
 ```
 
-`devs` siempre por delante de `main`. Para publicar: PR `devs → main` y tag desde `main`.
+### Publicar: `devs → main`
+
+Sólo cuando se decide publicar. Nada de tags desde `devs`.
+
+```sh
+gh pr create --base main --head devs --title "…" --body "…"
+gh pr merge <n> --rebase        # y después el tag, desde main
+```
+
+### Reglas que evitan los enredos
+
+- **`devs` siempre por delante de `main`.** Si `main` recibió algo (por ejemplo un PR abierto
+  contra la base equivocada), se trae a `devs` con un merge de `main` en una rama nueva; **nunca**
+  se reescribe `devs`.
+- **Un tema, una rama, un PR.** Si la rama lleva semanas, se parte.
+- **No se cambia la base de un PR cerrando y reabriendo**: al reabrir, GitHub puede devolverle la
+  base anterior. Para cambiar la base se usa `gh api -X PATCH .../pulls/<n> -f base=devs` y se
+  verifica que quedó.
+- **Los PRs de dependabot también van a `devs`** (`target-branch` en `dependabot.yml`). Antes de
+  mergear uno, confirmar la base: si dice `main`, se reorienta o se cierra.
+- **Los commits de bot y los de merge no se firman.** El DCO los ignora; firmar no hace falta y
+  firmarlos a mano es peor.
+- **Los tags salen de `main`**, nunca de `devs`.
+
+### Cuando algo falla
+
+| Síntoma | Causa | Qué hacer |
+|---|---|---|
+| `base branch policy prohibits the merge` | checks pendientes o fallidos | `gh pr checks <n>`; esperar o arreglar |
+| DCO falla con un commit `Merge …` | commit de merge sintético de GitHub | el hook usa `--no-merges`; si falla igual, el workflow es viejo: actualizar la rama con la base |
+| DCO falla en un PR de dependabot | commit de bot sin firma | el hook omite `[bot]`; si falla, el PR tiene base vieja |
+| `divergent branches` al hacer `git pull` | `devs` local quedó atrás de un merge con rebase | `git reset --hard origin/devs` (no hay trabajo propio que perder) |
 
 ## 9. Comandos
 
