@@ -49,20 +49,21 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "publicando ${tag}"
 
-      - uses: actions/checkout@v7
-        with:
-          ref: gh-pages
-          path: sitio
-        continue-on-error: true
-
-      - name: la rama gh-pages existe
+      - name: preparar la rama gh-pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -d sitio/.git ]; then
+          set -eu
+          url="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads "${url}" gh-pages >/dev/null 2>&1; then
+            echo "la rama gh-pages ya existe: se parte de ella"
+            git clone -q --depth 1 --branch gh-pages "${url}" sitio
+          else
             echo "no hay rama gh-pages todavía: se crea con esta corrida"
             mkdir -p sitio
             git -C sitio init -q
             git -C sitio checkout -q -b gh-pages
-            git -C sitio remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            git -C sitio remote add origin "${url}"
           fi
 
       - name: paquetes del release
@@ -202,4 +203,5 @@ jobs:
           fi
           git commit -q -m "Repositorio: paquetes de ${{ steps.tag.outputs.tag }}"
           git push -q origin gh-pages
+          echo "rama gh-pages actualizada"
           echo "publicado en ${PAGES_URL}"
