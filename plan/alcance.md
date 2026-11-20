@@ -158,8 +158,8 @@ La columna Estado define qué entra en cada hito.
 
 | Función | Estado |
 |---|---|
-| Enviar mensaje: cuerpo y título | siguiente |
-| Prioridad, etiquetas, enlace, markdown | siguiente |
+| Enviar mensaje: cuerpo y título | **núcleo** |
+| Prioridad, etiquetas, enlace, markdown | **núcleo** |
 | Adjunto por URL (`attach`) | siguiente |
 | Adjunto por archivo (subida) | después |
 | Entrega programada (`X-Delay`) | después |

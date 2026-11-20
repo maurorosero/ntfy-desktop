@@ -8,9 +8,10 @@ ntfy has a web app, a mobile app and a CLI — but no desktop client for Linux. 
 that client: it subscribes to a topic, shows what arrives as native notifications, lets you act
 on messages from a desktop dialog, and publishes messages back.
 
-**Status: pre-release.** It subscribes to a topic, shows what arrives as native notifications and
-asks for decisions through the desktop's own dialog. It runs with the graphical session as a user
-service. History and publishing are not there yet. See the [roadmap](#roadmap).
+**Status: pre-release.** It subscribes to a topic, shows what arrives as native notifications,
+asks for decisions through the desktop's own dialog and publishes messages from the terminal. It
+runs with the graphical session as a user service. History is not there yet. See the
+[roadmap](#roadmap).
 
 ## What it does
 
@@ -20,6 +21,8 @@ service. History and publishing are not there yet. See the [roadmap](#roadmap).
 - Opens a desktop dialog for messages that carry actions, one at a time, and runs the chosen
   action: open its link or call its URL.
 - Runs as a daemon from the graphical session, so messages arrive without a terminal open.
+- Publishes a message to a topic, with the body read from stdin and a title, priority, tags, click
+  target and Markdown when they are asked for.
 
 ## Platforms
 
@@ -81,6 +84,21 @@ dialog it opened is killed with it.
 The log level is `info` unless `--log-level` or the `log-level` key says otherwise
 (`debug`, `info`, `warn`, `error`); the flag wins over the file.
 
+### Publish
+
+```sh
+echo "Backup done" | ./bin/ntfy-desktop publish casa
+echo "Disco lleno" | ./bin/ntfy-desktop publish casa --title "Alerta" --priority 5 --tags warning,disk
+```
+
+The body is always read from stdin, so a message is never taken for a flag. The topic is the
+argument, `--topic`, or the one in the configuration. `--title`, `--priority` (1 to 5, or `min`,
+`low`, `default`, `high`, `max`), `--tags` (comma separated), `--click` (the URL the notification
+opens) and `--markdown` set what the message carries. On success the command prints the id the
+server assigned to the message and nothing else, so a script can keep it; a rejected publish exits
+with status 1 and says why. It authenticates exactly like the daemon: with the `user` and
+`password` of the configuration, or without credentials.
+
 ## Run with the session
 
 `packaging/ntfy-desktop.service` is a user unit: it starts with the graphical session, restarts the
@@ -128,7 +146,7 @@ is an error, so a typo is never silently ignored.
 ```
 cmd/ntfy-desktop/     entry point
 internal/config/      configuration loading and validation
-internal/ntfy/        ntfy protocol: JSON stream, authentication, reconnection
+internal/ntfy/        ntfy protocol: JSON stream, publishing, authentication, reconnection
 internal/notify/      desktop notifications over the freedesktop D-Bus service
 internal/platform/    session user, locale and desktop detection
 internal/version/     version injected at build time
@@ -148,7 +166,7 @@ Full scope, milestones and acceptance criteria live in [`plan/alcance.md`](plan/
 3. Decide: actions, dialog, queue. — done
 4. Resilience: reconnect, catch up, start with the session. — done
 5. History. — next
-6. Publishing.
+6. Publishing. — done
 7. Portability: verify the GNOME adapter on a real machine.
 
 ## Contributing

@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/maurorosero/ntfy-desktop/internal/config"
@@ -30,6 +31,8 @@ const (
 	commandDaemon command = "daemon"
 	// commandVersion prints the version and exits.
 	commandVersion command = "version"
+	// commandPublish sends one message, read from stdin, to a topic.
+	commandPublish command = "publish"
 )
 
 // errUsage reports a command line that was already explained on stderr by the
@@ -42,9 +45,10 @@ var errHelp = errors.New("usage printed")
 // options is what the command line asked for.
 type options struct {
 	command  command
-	explicit bool       // a subcommand or a flag chose the command
-	level    slog.Level // level of the logger
-	levelSet bool       // the flag carried the level, so it wins over the file
+	explicit bool           // a subcommand or a flag chose the command
+	level    slog.Level     // level of the logger
+	levelSet bool           // the flag carried the level, so it wins over the file
+	publish  publishOptions // flags of the publish command
 }
 
 // run parses the command line and runs the subcommand it names. It returns the
@@ -67,6 +71,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	switch opts.command {
 	case commandDaemon:
 		return runDaemon(ctx, opts, env, tr, stderr)
+	case commandPublish:
+		return runPublish(ctx, opts, tr, os.Stdin, stdout, stderr)
 	case commandVersion:
 		fmt.Fprintf(stdout, "ntfy-desktop %s\n", version.Version)
 		return 0
@@ -80,6 +86,13 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 // --daemon, a person at a terminal can write either form.
 func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error) {
 	opts := options{command: commandEnv, level: slog.LevelInfo}
+
+	// publish carries its own flags, so it reads its command line with its own
+	// parser instead of widening the flag set every command shares.
+	if rest, ok := splitPublish(args); ok {
+		opts.command, opts.explicit = commandPublish, true
+		return opts, opts.parsePublish(rest, tr, stderr)
+	}
 
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		if err := opts.choose(command(args[0]), tr); err != nil {
