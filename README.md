@@ -72,13 +72,34 @@ ntfy-desktop 0.0.1
 
 ## Configuration
 
-Not implemented yet. It will live in `~/.config/ntfy-desktop/config.toml`, created by you —
-never by the package. Two authentication modes: none (public topic) and username/password.
+One file, written by you — a package never puts anything in your home:
+
+```
+$XDG_CONFIG_HOME/ntfy-desktop/config.toml      # normally ~/.config/ntfy-desktop/config.toml
+```
+
+```toml
+server   = "https://ntfy.example.org"   # required, http or https, no query, no fragment
+topic    = "alerts"                     # required: 1 to 64 of [A-Za-z0-9_-]
+user     = "andrea"                     # optional, together with password
+password = "…"                          # optional, together with user
+```
+
+Leave `user` and `password` out to subscribe to a public topic; set both to use HTTP Basic on a
+protected one. Half a pair is a configuration error, not an anonymous subscription: the loader
+says which key is missing instead of quietly connecting without credentials.
+
+The loader and its validation live in `internal/config`; comments, blank lines and one
+`key = "value"` per line are supported, with `\"`, `\\`, `\n`, `\t` and `\r` escapes. The binary
+does not read the file yet: subscribing is the first milestone, so for now the file only matters
+to the tests.
 
 ## Project layout
 
 ```
 cmd/ntfy-desktop/     entry point
+internal/config/      configuration loading and validation
+internal/ntfy/        ntfy protocol: JSON stream, authentication, reconnection
 internal/platform/    session user, locale and desktop detection
 internal/version/     version injected at build time
 assets/               icon (SVG + PNG) and banner

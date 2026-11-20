@@ -75,8 +75,37 @@ Dos modos, y sólo dos por ahora:
 | **Sin credenciales** | topic público | sólo la URL del servidor y el topic |
 | **Usuario y contraseña** | topic protegido | HTTP Basic con el par configurado |
 
-La configuración declara el modo; si falta el par, se asume el primero. Un token (bearer) queda
-como variante a evaluar si un servidor lo exige.
+La configuración declara el modo: sin credenciales cuando no hay ni `user` ni `password`, HTTP
+Basic cuando están las dos. Un token (bearer) queda como variante a evaluar si un servidor lo
+exige.
+
+Media pareja —usuario sin contraseña, o contraseña sin usuario— **no** es un modo: es un error de
+configuración y se rechaza al cargar, con el nombre de la clave que falta. Suscribirse en
+silencio sin credenciales a un topic protegido se vería como un topic vacío, no como un error.
+
+## 4.3 Configuración
+
+Un solo archivo, escrito por el usuario. El paquete nunca lo crea.
+
+```
+os.UserConfigDir()/ntfy-desktop/config.toml     # normalmente ~/.config/ntfy-desktop/config.toml
+```
+
+`os.UserConfigDir()` respeta `XDG_CONFIG_HOME`, así que la ruta no se escribe a mano. El archivo
+es TOML, y de TOML se acepta el subconjunto que hace falta: comentarios, líneas en blanco y una
+asignación `clave = "valor"` por línea, con los escapes `\"`, `\\`, `\n`, `\t` y `\r`. Lo que no
+entra en ese subconjunto se rechaza con el número de línea: una clave mal escrita no se ignora en
+silencio.
+
+```toml
+server   = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
+topic    = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-]
+user     = "andrea"                     # opcional, junto con password
+password = "…"                          # opcional, junto con user
+```
+
+Sin `user` ni `password` el cliente se suscribe sin credenciales. Las secciones `[tabla]` todavía
+no se aceptan: hoy la configuración es de una sola suscripción y las claves van sueltas.
 
 ## 5. Funcionalidades de un cliente ntfy
 

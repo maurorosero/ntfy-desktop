@@ -39,3 +39,67 @@ msgstr "no dialog tool found"
 #: cmd/ntfy-desktop/main.go
 msgid "prints the version and exits"
 msgstr "prints the version and exits"
+
+#: internal/config/config.go
+msgid "must not be empty"
+msgstr "must not be empty"
+
+#: internal/config/config.go
+msgid "must be an http or https URL"
+msgstr "must be an http or https URL"
+
+#: internal/config/config.go
+msgid "must not have a query or a fragment"
+msgstr "must not have a query or a fragment"
+
+#: internal/config/config.go
+msgid "must be 1 to 64 characters of letters, digits, dashes or underscores"
+msgstr "must be 1 to 64 characters of letters, digits, dashes or underscores"
+
+#: internal/config/config.go
+msgid "must not contain a colon"
+msgstr "must not contain a colon"
+
+#: internal/config/config.go
+msgid "must not contain control characters"
+msgstr "must not contain control characters"
+
+#: internal/config/config.go
+msgid "requires a user name"
+msgstr "requires a user name"
+
+#: internal/config/config.go
+msgid "requires a password"
+msgstr "requires a password"
+
+#: internal/config/toml.go
+msgid "expected key = value"
+msgstr "expected key = value"
+
+#: internal/config/toml.go
+msgid "invalid key"
+msgstr "invalid key"
+
+#: internal/config/toml.go
+msgid "value must be a quoted string"
+msgstr "value must be a quoted string"
+
+#: internal/config/toml.go
+msgid "unexpected text after the closing quote"
+msgstr "unexpected text after the closing quote"
+
+#: internal/config/toml.go
+msgid "invalid escape sequence"
+msgstr "invalid escape sequence"
+
+#: internal/config/toml.go
+msgid "unterminated quoted value"
+msgstr "unterminated quoted value"
+
+#: internal/config/toml.go
+msgid "duplicate key"
+msgstr "duplicate key"
+
+#: internal/config/toml.go
+msgid "unsupported key"
+msgstr "unsupported key"
