@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Nothing yet.
+
+## [0.1.0] - 2026-11-20
+
 ### Added
 
-- Nothing yet.
+- CHANGELOG entries are now written as fragments in `.changes/unreleased/` and assembled at release time by `tools/changelog.sh`.
+
+### Changed
+
+- `devs` is the working branch and accepts direct pushes; `main` only receives releases through a pull request with a merge commit.
 
 ## [0.0.1] - 2026-11-20
 
@@ -50,5 +58,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 - Spanish is the only translation so far; English is the source language.
 - GNOME support is scaffolded but unverified; there is no GNOME machine in the test setup.
 
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.0.1...HEAD
+[0.1.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.1.0
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.1.0...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1

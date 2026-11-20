@@ -165,6 +165,29 @@ point on `main`, `devs` is always its ancestor, and no post-release sync is need
   `[bot]`).
 - **Tags are cut from `main`.**
 
+## Changelog fragments
+
+Every user-visible change leaves its entry when it is made, in `.changes/unreleased/`:
+
+```
+.changes/unreleased/added-<something>.md      new capability
+.changes/unreleased/changed-<something>.md    behaviour that changed
+.changes/unreleased/fixed-<something>.md      bug fixed
+.changes/unreleased/security-<something>.md   security issue
+```
+
+The content is the entry itself, in English, one or two lines. Internal changes — refactors with
+no visible effect, `ci:`, docs, dependency bumps that change nothing — need no fragment.
+
+At release time:
+
+```sh
+tools/changelog.sh prepare v0.1.0   # builds the section, removes the used fragments
+```
+
+CI enforces it: a pull request to `devs` reports pending fragments; a pull request to `main`
+**fails** if `CHANGELOG.md` did not change against `main`.
+
 ## Reporting bugs
 
 Use the issue template. Include:
