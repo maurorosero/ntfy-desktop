@@ -1,0 +1,121 @@
+# Using ntfy-desktop
+
+`ntfy-desktop` is one binary with a few modes. With no arguments it reports what it detected about
+the session and exits; the rest is the daemon the service unit starts, the `publish` command and the
+`history` listing.
+
+```sh
+ntfy-desktop                        # what it detected: user, locale, desktop, dialog tool
+ntfy-desktop --version              # version and the commit it was built from
+ntfy-desktop --daemon               # subscribe, notify, ask, until stopped
+ntfy-desktop daemon --log-level debug
+ntfy-desktop publish [topic]        # body from stdin
+ntfy-desktop history [--unread]
+```
+
+## The daemon
+
+`--daemon` (or `daemon`) is the mode the user unit starts. It reads the configuration, subscribes to
+the topic over the JSON stream, shows every message as a native notification, asks for decisions
+through the desktop dialog, and stays in the foreground so systemd can supervise it: the log goes to
+stderr, which is the journal.
+
+- Reconnection is automatic, with a growing wait between attempts (1 s, doubling, capped at about a
+  minute). A dropped connection is a warning in the log, not an exit.
+- `SIGTERM` and `SIGINT` end it in well under a second, and any dialog it opened is killed with it.
+- `--log-level` takes `debug`, `info`, `warn` or `error`, and wins over the `log-level` key.
+
+Exit statuses:
+
+| Status | Meaning |
+|---|---|
+| 0 | Ran and stopped normally |
+| 1 | Could not read or validate the configuration, or the command failed |
+| 2 | The command line itself was wrong |
+
+## Publishing
+
+```sh
+echo "Backup done" | ntfy-desktop publish casa
+echo "Disk almost full" | ntfy-desktop publish casa --title "Alert" --priority 5 --tags warning,disk
+printf 'line one\nline two\n' | ntfy-desktop publish --topic alerts --markdown
+```
+
+The body is **always** read from stdin, so a message that starts with a dash is never taken for a
+flag. The topic is the argument, `--topic`, or the one in the configuration — in that order.
+
+| Flag | What it sets |
+|---|---|
+| `--title` | the message title |
+| `--priority` | 1 to 5, or `min`, `low`, `default`, `high`, `max`, `urgent` |
+| `--tags` | comma separated tags |
+| `--click` | the URL the notification opens when tapped |
+| `--markdown` | ask the client to render the body as Markdown |
+
+On success the command prints the id the server assigned and nothing else, so a script can keep it.
+A publish the server refuses exits with status 1 and says what happened — a 403 names the topic and
+what to look at, never the password.
+
+## History
+
+```sh
+ntfy-desktop history            # one line per message, newest first
+ntfy-desktop history --unread   # only the ones that have not been read
+```
+
+Each line is the date, the topic, the title and the first line of the body; a star marks what has
+not been read. The store lives in `$XDG_CACHE_HOME/ntfy-desktop/history`, one append-only file per
+topic, and keeps the last 500 messages: older ones are dropped as new ones arrive, and the file is
+compacted once it grows past that.
+
+A file that cannot be read is reported and replaced instead of stopping the program, so
+`rm -rf` on that directory is a safe way to start over.
+
+**The daemon does not write to the history yet.** The store and the command are in place; wiring
+`Add` and `MarkRead` into the subscription is tracked as its own task, so `history` shows what has
+been recorded by hand or by a later version.
+
+## Running with the session
+
+Install the unit with `./install.sh`, or by hand:
+
+```sh
+install -Dm644 packaging/ntfy-desktop.service ~/.config/systemd/user/ntfy-desktop.service
+systemctl --user daemon-reload
+systemctl --user enable --now ntfy-desktop.service
+```
+
+```sh
+systemctl --user status ntfy-desktop
+journalctl --user -u ntfy-desktop -f
+systemctl --user restart ntfy-desktop
+```
+
+The unit declares `PartOf=graphical-session.target`, so it starts and stops with the session, and
+`Restart=on-failure` with `StartLimitBurst=5` per minute: a configuration that is broken fails five
+times and stops, instead of filling the journal forever.
+
+It runs hardened (`ProtectSystem=strict`, `ProtectHome=read-only`) and may write only to
+`~/.config/ntfy-desktop`, `~/.local/share/ntfy-desktop` and `~/.cache/ntfy-desktop`.
+
+## Installing
+
+```sh
+./install.sh              # binary, menu entry, icons and the user service
+./install.sh --bin-only   # just the binary
+./install.sh --prefix DIR # somewhere else than ~/.local
+./install.sh --dry-run    # what it would do
+./install.sh --uninstall  # remove it, leaving the configuration alone
+```
+
+No root is needed for the default prefix. The unit is written with the real path of the installed
+binary, so a different prefix starts too.
+
+## Environment
+
+| Variable | Used for |
+|---|---|
+| `XDG_CONFIG_HOME` | where `ntfy-desktop/config.toml` is read |
+| `XDG_CACHE_HOME` | where `ntfy-desktop/history` is written |
+| `XDG_CURRENT_DESKTOP` | which dialog tool to use: `kdialog` on KDE, `zenity` elsewhere |
+| `LC_ALL`, `LC_MESSAGES`, `LANG` | the language, with `C` and `POSIX` falling back to `en` |
