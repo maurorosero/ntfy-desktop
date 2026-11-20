@@ -79,14 +79,31 @@ jobs:
           TAG: ${{ github.ref_name }}
         # Fuera del árbol de trabajo: goreleaser se niega a construir con
         # archivos sin versionar, y el cuerpo de la release no entra al repo.
-        run: tools/changelog.sh notes "${TAG#v}" > "${RUNNER_TEMP}/release-notes.md"
+        run: |
+          {
+            tools/changelog.sh notes "${TAG#v}"
+            echo
+            echo "---"
+            echo
+            echo "Paquetes \`.deb\` y \`.rpm\` para amd64 y arm64, más los binarios sueltos en tar.gz sin cgo."
+            echo "Verificación: \`sha256sum -c checksums.txt\`"
+            echo
+            echo "El paquete instala el binario en \`/usr/bin\`, el acceso de menú, los iconos y la unidad"
+            echo "de usuario; la configuración es tuya, en \`~/.config/ntfy-desktop/config.toml\`."
+          } > "${RUNNER_TEMP}/release-notes.md"
       - name: construir y publicar
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean --release-notes=${{ runner.temp }}/release-notes.md
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: el cuerpo de la release
+        # goreleaser ignora --release-notes en esta versión, así que el cuerpo se
+        # escribe después, con el mismo archivo: si no se aplicara, el paso falla.
+        run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/release-notes.md"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: resumen
         run: |
           {
