@@ -7,6 +7,7 @@
 #   tools/changelog.sh prepare v0.1.0    arma la sección, borra los fragmentos usados
 #   tools/changelog.sh check             verifica el estado (para CI)
 #   tools/changelog.sh list              muestra los fragmentos pendientes
+#   tools/changelog.sh notes v0.2.0       imprime la sección de esa versión (cuerpo de la release)
 #
 # Formato de un fragmento: el nombre empieza con el tipo y el contenido es la
 # entrada, tal como va a leerse en el changelog.
@@ -231,10 +232,29 @@ cmd_check() {
 	fi
 }
 
+# cmd_notes imprime la sección de una versión, sin el encabezado ##, para que el
+# workflow de entrega la use como cuerpo de la release: lo que se lee en la
+# release es exactamente lo que dice el changelog.
+cmd_notes() {
+	local version="${1:-}"
+	[ -n "${version}" ] || morir "falta la versión, por ejemplo: tools/changelog.sh notes v0.2.0"
+	version="${version#v}"
+
+	grep -qE "^## \\[${version}\\]" "${CHANGELOG}" ||
+		morir "CHANGELOG.md no tiene una sección para ${version}"
+
+	awk -v v="${version}" '
+		$0 ~ "^## \\[" v "\\]" { dentro = 1; next }
+		dentro && /^## \[/ { exit }
+		dentro { print }
+	' "${CHANGELOG}" | sed -e '1{/^$/d}' -e '${/^$/d}'
+}
+
 case "${1:-}" in
 prepare) shift; cmd_prepare "$@" ;;
 check) shift; cmd_check "$@" ;;
 list) cmd_list ;;
+notes) shift; cmd_notes "$@" ;;
 -h | --help | "")
 	sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 	;;

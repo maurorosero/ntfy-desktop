@@ -278,6 +278,12 @@ git tag -a v0.x.y -m "…" origin/main
 git push origin v0.x.y
 ```
 
+**El push del tag es la entrega**: `.github/workflows/release.yml` verifica que el tag esté sobre
+el merge de `main` y que la versión exista en `CHANGELOG.md`, y sólo entonces construye con
+`goreleaser` los binarios `linux/amd64` y `linux/arm64` de esa versión y los publica con sus
+checksums. El número dentro del binario sale del tag, así que `ntfy-desktop --version` no puede
+mentir. No se compila a mano: si el tag está mal puesto, el workflow falla y no hay artefactos.
+
 **Se publica con commit de merge, no con rebase.** Así cada release queda como un punto
 explícito en `main`, `devs` siempre es ancestro suyo, y no hace falta ningún paso de
 sincronización después. `git log --first-parent main` muestra la línea de publicaciones.

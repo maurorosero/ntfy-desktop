@@ -62,6 +62,16 @@ No Go installation is needed: `make` uses the toolchain inside the repository.
 
 ## Install
 
+Every release publishes `.deb` and `.rpm` packages for `amd64` and `arm64`, which install the binary
+in `/usr/bin` along with the menu entry, the icons and the user unit:
+
+```sh
+sudo dpkg -i ntfy-desktop_0.2.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
+sudo rpm -i  ntfy-desktop-0.2.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
+```
+
+From source, without root, everything goes to `~/.local`:
+
 ```sh
 make build
 ./install.sh              # binary, menu entry, icons and the user service
@@ -176,6 +186,7 @@ open.
 | [docs/decisions.md](docs/decisions.md) | publishing and answering decision requests |
 | [docs/architecture.md](docs/architecture.md) | packages, dependencies, queue, notifications, tests |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | what to look at when nothing arrives |
+| [docs/release.md](docs/release.md) | how a version is tagged and delivered |
 | [plan/alcance.md](plan/alcance.md) | scope, milestones and decisions (Spanish) |
 
 ## Project layout
