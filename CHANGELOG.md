@@ -9,6 +9,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+## [0.2.0] - 2026-11-20
+
+### Added
+
+- Run as a daemon: `--daemon` subscribes, shows every message as a notification and asks for the
+  decisions its actions carry, until it is told to stop. `SIGTERM` and `SIGINT` end it in well under
+  a second, killing any dialog it opened, and the log goes to stderr at a level set by `--log-level`
+  or the `log-level` key.
+- The user unit in `packaging/` starts it with the graphical session and restarts it if it aborts.
+- Show a message's actions in a native desktop dialog — `kdialog` on Plasma, `zenity` on GNOME — with
+  the sender's own labels, and run the chosen action: open its link or call its URL. One dialog at a
+  time, with the pending count in the title; closing it leaves the request in the queue, and a
+  request nobody answers before its deadline is answered as expired.
+- Show each message as a native desktop notification: the message title and body, the urgency that
+  matches its priority, a timeout of 30 to 60 seconds, and the message link opening in the desktop's
+  browser when the notification is clicked.
+- `ntfy-desktop history` lists the messages kept in a local history: date, topic, title and the first
+  line of each. `--unread` narrows the listing to the ones that have not been read yet, and the store
+  keeps the last 500 messages under the user cache directory, dropping the oldest as new ones arrive.
+- Load the configuration file and subscribe to an ntfy topic's JSON stream, with optional HTTP Basic
+  authentication and automatic reconnection.
+- Publish a message to a topic with `publish`: the body is read from stdin, so it is never taken for a
+  flag, and `--title`, `--priority`, `--tags`, `--click` and `--markdown` set what it carries. It
+  authenticates like the daemon, prints the id the server assigned and reports a refused publish
+  (HTTP 403) with the reason to look at.
+
+### Changed
+
+- A decision with two actions is asked with real buttons instead of a list: kdialog's `--yesnocancel`
+  and zenity's `--question` both rename their buttons from the catalog, so answering is one click
+  instead of picking a row and then pressing OK. One action gets a single button; three or more keep
+  the list, which now carries the way out once and is sized to show every row. The dialog also wears
+  the urgency of the message as its icon: warning at priority 4 and above, information at 2 and
+  below, a question otherwise.
+- The queue waits a quarter of a second before opening the first dialog of a batch, so the counter in
+  the title says how many are waiting behind it: three messages that arrive together read
+  "Decision (1 of 3)" instead of "Decision".
+- `install.sh` installs and enables the user unit along with the binary, the menu entry and the icons,
+  and writes it with the real path of the installed binary instead of assuming `/usr/bin`. The unit
+  goes to `<prefix>/share/systemd/user/`, which systemd --user already searches, so a prefix other
+  than `~/.local` works too. `--bin-only` installs the binary and nothing else.
+- The unit no longer blocks the history: it runs with `ProtectHome=read-only`, and now lists
+  `~/.cache/ntfy-desktop` among the paths it may write, where the store lives.
+- Releases are prepared with a dossier and written by an agent; `main` exists only on the remote.
+
+### Fixed
+
+- zenity exits 1 for its extra button, the same code as its own cancel button, so a rejection on
+  GNOME was read as "no answer" and the request stayed pending. The client now sets `ZENITY_EXTRA`
+  when it starts the dialog, which zenity reads to give that button its own code.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added
@@ -59,5 +110,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 - GNOME support is scaffolded but unverified; there is no GNOME machine in the test setup.
 
 [0.1.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.1.0
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.2.0
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.2.0...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1

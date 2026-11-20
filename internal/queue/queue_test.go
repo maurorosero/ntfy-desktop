@@ -494,4 +494,3 @@ func TestSettleOffOpensAtOnce(t *testing.T) {
 		t.Errorf("preguntó %q, quiero [\"solo 1/1\"]", dial.asked)
 	}
 }
-
