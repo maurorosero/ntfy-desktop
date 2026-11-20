@@ -93,7 +93,7 @@ func serve(ctx context.Context, log *slog.Logger, tr *i18n.Translator, env platf
 	if err != nil {
 		log.Warn("no desktop dialog: decisions will not be asked", "error", err)
 	} else {
-		q := queue.New(decider, action.New(), queue.DefaultTTL)
+		q := queue.New(decider, action.New(), queue.DefaultTTL).WithSettle(queue.SettleWindow)
 		wg.Add(2)
 		go func() {
 			defer wg.Done()

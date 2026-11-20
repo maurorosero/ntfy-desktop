@@ -95,12 +95,19 @@ type request struct {
 	deadline time.Time // zero when the request does not expire
 }
 
+// SettleWindow is how long the queue waits before opening the first dialog of a
+// batch. Messages that arrive together reach the line a few milliseconds apart,
+// and the counter in the title ("Decision (1 of 3)") is only right when the
+// batch is complete as the dialog opens. It is short enough not to be felt.
+const SettleWindow = 250 * time.Millisecond
+
 // Queue is the line of requests. Submit and Size can be called from any
 // goroutine; Run owns the dialogs.
 type Queue struct {
 	decider  Decider
 	executor Executor
 	ttl      time.Duration
+	settle   time.Duration
 	results  chan Result
 	wake     chan struct{}
 
@@ -113,6 +120,9 @@ type Queue struct {
 // New builds a queue that answers with the given decider and runs the chosen
 // action with the given executor. A ttl of zero or less turns the deadline off.
 // Use DefaultTTL unless there is a reason not to.
+//
+// The queue opens the first dialog at once. WithSettle adds the wait that lets a
+// burst of messages gather, so the counter in the title counts them all.
 func New(decider Decider, executor Executor, ttl time.Duration) *Queue {
 	return &Queue{
 		decider:  decider,
@@ -121,6 +131,14 @@ func New(decider Decider, executor Executor, ttl time.Duration) *Queue {
 		results:  make(chan Result, resultsBuffer),
 		wake:     make(chan struct{}, 1),
 	}
+}
+
+// WithSettle makes the queue wait up to d before opening the first dialog of a
+// batch, and count the batch again after the wait. Zero, the default, opens it
+// at once.
+func (q *Queue) WithSettle(d time.Duration) *Queue {
+	q.settle = d
+	return q
 }
 
 // Results is where the answers come out. It is closed when Run returns.
@@ -178,6 +196,29 @@ func (q *Queue) Run(ctx context.Context) {
 	}
 }
 
+// settleBatch waits the settle window and counts the batch again, so the first
+// dialog of a burst says how many are waiting behind it. It returns total when
+// there is nothing to wait for or the wait was cut short.
+func (q *Queue) settleBatch(ctx context.Context, total int) int {
+	if q.settle <= 0 {
+		return total
+	}
+	timer := time.NewTimer(q.settle)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return total
+	case <-timer.C:
+	}
+
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.batch > total {
+		return q.batch
+	}
+	return total
+}
+
 // pop takes the oldest request and its place in the batch. A line that runs dry
 // starts a new batch, so the counter of the next group begins at one.
 func (q *Queue) pop() (r request, pos, total int, ok bool) {
@@ -206,6 +247,12 @@ func (q *Queue) pop() (r request, pos, total int, ok bool) {
 func (q *Queue) serve(ctx context.Context, r request, pos, total int) bool {
 	if q.expired(r) {
 		return q.emit(ctx, Result{Message: r.message, Status: Expired})
+	}
+
+	// The first dialog of a batch waits a moment, so a burst of messages that
+	// arrived together is counted whole in its title.
+	if pos == 1 {
+		total = q.settleBatch(ctx, total)
 	}
 
 	askCtx, cancel := ctx, func() {}

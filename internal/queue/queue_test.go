@@ -430,3 +430,68 @@ func TestStatusString(t *testing.T) {
 		}
 	}
 }
+
+// TestSettleCountsTheBurst covers the counter of the title: three messages that
+// arrive together must be asked as "1 of 3", not "1 of 1", so the person knows
+// two more are waiting behind the first dialog.
+func TestSettleCountsTheBurst(t *testing.T) {
+	dial := &fakeDialog{steps: []step{{answer: "Aprobar"}, {answer: "Aprobar"}, {answer: "Aprobar"}}}
+	q := New(dial, &fakeExecutor{}, 0).WithSettle(50 * time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go q.Run(ctx)
+
+	for i := 1; i <= 3; i++ {
+		if err := q.Submit(message(fmt.Sprintf("m%d", i), "Aprobar")); err != nil {
+			t.Fatalf("Submit(%d) = %v", i, err)
+		}
+	}
+
+	for i := 0; i < 3; i++ {
+		select {
+		case <-q.Results():
+		case <-time.After(2 * time.Second):
+			t.Fatalf("la cola no emitió el resultado %d", i+1)
+		}
+	}
+
+	dial.mu.Lock()
+	defer dial.mu.Unlock()
+	want := []string{"m1 1/3", "m2 2/3", "m3 3/3"}
+	if len(dial.asked) != len(want) {
+		t.Fatalf("preguntó %q, quiero %q", dial.asked, want)
+	}
+	for i := range want {
+		if dial.asked[i] != want[i] {
+			t.Errorf("pregunta %d = %q, quiero %q", i+1, dial.asked[i], want[i])
+		}
+	}
+}
+
+// TestSettleOffOpensAtOnce keeps the default: without a settle window the first
+// dialog of a batch opens with the count it had when it was popped.
+func TestSettleOffOpensAtOnce(t *testing.T) {
+	dial := &fakeDialog{steps: []step{{answer: "Aprobar"}}}
+	q := New(dial, &fakeExecutor{}, 0)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go q.Run(ctx)
+
+	if err := q.Submit(message("solo", "Aprobar")); err != nil {
+		t.Fatalf("Submit = %v", err)
+	}
+	select {
+	case <-q.Results():
+	case <-time.After(2 * time.Second):
+		t.Fatal("la cola no emitió el resultado")
+	}
+
+	dial.mu.Lock()
+	defer dial.mu.Unlock()
+	if len(dial.asked) != 1 || dial.asked[0] != "solo 1/1" {
+		t.Errorf("preguntó %q, quiero [\"solo 1/1\"]", dial.asked)
+	}
+}
+
