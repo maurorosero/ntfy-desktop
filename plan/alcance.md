@@ -33,10 +33,10 @@ escritorio, ni de saber que quedaron pendientes.
 
 | # | Requisito | Origen |
 |---|---|---|
-| R1 | Recibir mensajes sin abrir navegador | pedido de Mauro |
-| R2 | Aviso visible en el escritorio | pedido de Mauro |
-| R3 | Poder **decidir** desde el aviso | pedido de Mauro |
-| R4 | La petición no se pierde si estoy trabajando | pedido de Mauro |
+| R1 | Recibir mensajes sin abrir navegador | requisito del usuario |
+| R2 | Aviso visible en el escritorio | requisito del usuario |
+| R3 | Poder **decidir** desde el aviso | requisito del usuario |
+| R4 | La petición no se pierde si estoy trabajando | requisito del usuario |
 | R5 | Sólo una ventana de decisión a la vez | prueba: dos diálogos se apilan y la primera queda tapada |
 | R6 | Reconectar y recuperar lo que llegó mientras estaba apagado | diseño |
 | R7 | Las credenciales no viven en el código: se leen de configuración o del entorno | requisito de producto |
