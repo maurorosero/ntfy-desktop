@@ -25,7 +25,7 @@ var keyPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 // parse turns the file content into a validated Config. It reads only the
 // supported subset: comments, blank lines and one `key = "value"` per line.
 func parse(data []byte) (*Config, error) {
-	values := make(map[string]string, 4)
+	values := make(map[string]string, 5)
 	for i, raw := range strings.Split(string(data), "\n") {
 		line := i + 1
 		text := strings.TrimSpace(raw)
@@ -38,7 +38,7 @@ func parse(data []byte) (*Config, error) {
 			return nil, err
 		}
 		switch key {
-		case keyServer, keyTopic, keyUser, keyPassword:
+		case keyServer, keyTopic, keyUser, keyPassword, keyLogLevel:
 		default:
 			return nil, &SyntaxError{Line: line, Key: key, Msg: msgUnsupported}
 		}
@@ -53,6 +53,7 @@ func parse(data []byte) (*Config, error) {
 		Topic:     values[keyTopic],
 		User:      values[keyUser],
 		Password:  values[keyPassword],
+		LogLevel:  values[keyLogLevel],
 	}
 	if err := cfg.validate(); err != nil {
 		return nil, err

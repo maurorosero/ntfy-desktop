@@ -107,6 +107,7 @@ msgstr "clave no soportada"
 #: internal/notify/notify.go
 msgid "Open"
 msgstr "Abrir"
+
 #: internal/dialog/dialog.go
 msgid "Decision"
 msgstr "Decisión"
@@ -130,3 +131,35 @@ msgstr "Elegir"
 #: internal/dialog/zenity.go
 msgid "Action"
 msgstr "Acción"
+
+#: internal/config/config.go
+msgid "must be debug, info, warn or error"
+msgstr "debe ser debug, info, warn o error"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "usage: ntfy-desktop [command] [flags]"
+msgstr "uso: ntfy-desktop [comando] [opciones]"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "run until stopped: subscribe, notify and ask for decisions"
+msgstr "corre hasta que lo detengan: suscribe, avisa y pide decisiones"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "log level: debug, info, warn or error (default: info)"
+msgstr "nivel de registro: debug, info, warn o error (por omisión: info)"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unexpected argument %q"
+msgstr "argumento inesperado %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "cannot run %q and %q at once"
+msgstr "no se pueden pedir %q y %q a la vez"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unknown command %q"
+msgstr "comando desconocido %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "invalid log level %q: use debug, info, warn or error"
+msgstr "nivel de registro inválido %q: usá debug, info, warn o error"

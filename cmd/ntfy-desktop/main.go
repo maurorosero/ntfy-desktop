@@ -1,41 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// ntfy-desktop es un cliente de ntfy para escritorio Linux.
-// Esta es la etapa de esqueleto: detecta el entorno y no habla con el servidor todavía.
+// ntfy-desktop is an ntfy client for the Linux desktop: it subscribes to a
+// topic, shows what arrives as native notifications, and asks for a decision
+// through the desktop's own dialog when a message carries actions.
+//
+// main does two things: it sets up the cancellation that a signal triggers, and
+// it hands the command line to run, which dispatches on the subcommand.
 package main
 
 import (
-	"flag"
-	"fmt"
+	"context"
 	"os"
-
-	"github.com/maurorosero/ntfy-desktop/internal/i18n"
-	"github.com/maurorosero/ntfy-desktop/internal/platform"
-	"github.com/maurorosero/ntfy-desktop/internal/version"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
-	entorno := platform.Detect()
-	tr := i18n.New(entorno.Locale)
-
-	mostrarVersion := flag.Bool("version", false, tr.T("prints the version and exits"))
-	flag.Parse()
-
-	if *mostrarVersion {
-		fmt.Printf("ntfy-desktop %s\n", version.Version)
-		return
-	}
-
-	herramienta := entorno.DialogTool
-	if herramienta == "" {
-		herramienta = tr.T("no dialog tool found")
-	}
-
-	fmt.Printf("ntfy-desktop %s\n", version.Version)
-	fmt.Printf("  %-10s %s\n", tr.T("user"), entorno.User)
-	fmt.Printf("  %-10s %s\n", tr.T("locale"), entorno.Locale)
-	fmt.Printf("  %-10s %s\n", tr.T("desktop"), entorno.Desktop)
-	fmt.Printf("  %-10s %s\n", tr.T("dialogs"), herramienta)
-
-	os.Exit(0)
+	// SIGINT and SIGTERM cancel the context; every goroutine of the program
+	// watches it, so the process ends after the dialogs it opened are gone.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	code := run(ctx, os.Args[1:], os.Stdout, os.Stderr)
+	stop()
+	os.Exit(code)
 }

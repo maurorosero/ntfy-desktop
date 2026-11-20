@@ -45,6 +45,19 @@ const (
 	// maxTrackedLinks caps the links kept for a click. A service that never
 	// sends NotificationClosed would otherwise grow the map without end.
 	maxTrackedLinks = 128
+	// Notification service of the freedesktop specification: its bus name and
+	// its object path. The capability query below needs them to carry its own
+	// deadline.
+	serviceName = "org.freedesktop.Notifications"
+	servicePath = "/org/freedesktop/Notifications"
+	// capabilityWait bounds the capability query of the start-up. A bus without
+	// the service, or a service that does not answer, must not hold the program
+	// before it subscribes to anything.
+	capabilityWait = 3 * time.Second
+	// sendWait caps how long one notification waits for the service. A service
+	// that has stopped answering keeps its one place and the caller moves on to
+	// the next message.
+	sendWait = 5 * time.Second
 )
 
 // Notifier shows a message as a notification of the desktop.
@@ -54,6 +67,13 @@ const (
 type Notifier interface {
 	Show(ctx context.Context, m ntfy.Message) error
 }
+
+// errBusy says the service has not answered the previous notification yet.
+var (
+	errBusy = errors.New("the notification service is still busy")
+	// errNoAnswer says the service took longer than sendWait to answer.
+	errNoAnswer = errors.New("the notification service did not answer")
+)
 
 // sender is the single operation this package needs from the notification
 // service. Keeping it this narrow is what lets the tests run without a bus.
@@ -76,6 +96,10 @@ type DBus struct {
 	open opener // nil when the desktop has no tool to open links
 	log  *slog.Logger
 	tr   *i18n.Translator
+
+	// sending holds at most one send: a service that stops answering costs one
+	// goroutine, not one per message.
+	sending chan struct{}
 
 	mu    sync.Mutex
 	links map[uint32]string
@@ -102,10 +126,11 @@ func New(log *slog.Logger, tr *i18n.Translator) (*DBus, error) {
 	}
 
 	d := &DBus{
-		conn:  conn,
-		log:   log,
-		tr:    tr,
-		links: make(map[uint32]string),
+		conn:    conn,
+		log:     log,
+		tr:      tr,
+		sending: make(chan struct{}, 1),
+		links:   make(map[uint32]string),
 	}
 	svc, err := dbusnotify.New(conn,
 		dbusnotify.WithLogger(busLogger{log: log}),
@@ -122,7 +147,7 @@ func New(log *slog.Logger, tr *i18n.Translator) (*DBus, error) {
 	d.svc = svc
 	d.send = svc
 	d.open = findOpener(log)
-	d.reportCapabilities(svc)
+	d.reportCapabilities()
 	return d, nil
 }
 
@@ -131,6 +156,10 @@ func New(log *slog.Logger, tr *i18n.Translator) (*DBus, error) {
 // Events that are not messages (open, keepalive) draw nothing. A link is only
 // attached when it is http or https, so a message from the network never picks
 // the program the desktop runs.
+//
+// The send is bounded by ctx: a service that stops answering returns the
+// cancellation instead of holding the caller, which is what lets the program
+// end when it is told to.
 func (d *DBus) Show(ctx context.Context, m ntfy.Message) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -145,8 +174,11 @@ func (d *DBus) Show(ctx context.Context, m ntfy.Message) error {
 		note.Actions = append(note.Actions, dbusnotify.NewDefaultAction(d.tr.T("Open")))
 	}
 
-	id, err := d.send.SendNotification(note)
+	id, err := d.deliver(ctx, note)
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr // the program is stopping: nothing to report
+		}
 		d.log.Warn("showing the notification", "topic", m.Topic, "message", m.ID, "error", err)
 		return fmt.Errorf("showing the notification of %q: %w", m.ID, err)
 	}
@@ -154,6 +186,40 @@ func (d *DBus) Show(ctx context.Context, m ntfy.Message) error {
 		d.remember(id, link)
 	}
 	return nil
+}
+
+// deliver sends the notification and returns its identifier, unless ctx ends or
+// the service takes longer than sendWait. A send that never comes back keeps its
+// place, so the next one is refused with errBusy instead of stacking up behind
+// it.
+func (d *DBus) deliver(ctx context.Context, note dbusnotify.Notification) (uint32, error) {
+	select {
+	case d.sending <- struct{}{}:
+	default:
+		return 0, errBusy
+	}
+
+	type answer struct {
+		id  uint32
+		err error
+	}
+	done := make(chan answer, 1)
+	go func() {
+		defer func() { <-d.sending }()
+		id, err := d.send.SendNotification(note)
+		done <- answer{id: id, err: err}
+	}()
+
+	timer := time.NewTimer(sendWait)
+	defer timer.Stop()
+	select {
+	case got := <-done:
+		return got.id, got.err
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case <-timer.C:
+		return 0, errNoAnswer
+	}
 }
 
 // Close stops the signal loop and releases the connection to the bus.
@@ -247,9 +313,22 @@ func findOpener(log *slog.Logger) opener {
 
 // reportCapabilities tells the operator what the service will not do. A click
 // only reaches the program when the server announces the "actions" capability.
-func (d *DBus) reportCapabilities(svc dbusnotify.Notifier) {
-	caps, err := svc.GetCapabilities()
-	if err != nil {
+//
+// The query is a nicety of the start-up, so it carries a deadline: a bus
+// without the service, or a service that does not answer, must not hold the
+// program before it subscribes.
+func (d *DBus) reportCapabilities() {
+	ctx, cancel := context.WithTimeout(context.Background(), capabilityWait)
+	defer cancel()
+
+	call := d.conn.Object(serviceName, servicePath).
+		CallWithContext(ctx, serviceName+".GetCapabilities", 0)
+	if call.Err != nil {
+		d.log.Debug("reading the capabilities of the notification service", "error", call.Err)
+		return
+	}
+	var caps []string
+	if err := call.Store(&caps); err != nil {
 		d.log.Debug("reading the capabilities of the notification service", "error", err)
 		return
 	}
