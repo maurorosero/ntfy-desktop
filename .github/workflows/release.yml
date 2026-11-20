@@ -1,0 +1,104 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Delivery: a tag on main becomes a release with the binaries built from it.
+#
+# The tag is the only trigger, and it is checked before anything is built: a tag
+# that does not sit on a merge commit of main, or that names a version missing
+# from CHANGELOG.md, stops the job instead of shipping a binary that lies about
+# what it contains.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  guarda:
+    name: guarda del tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: el tag es un merge de main y la versión está en el changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          version="${TAG#v}"
+          git fetch --no-tags origin main
+
+          # 1) El commit del tag tiene que ser el merge que trajo los cambios a main.
+          if ! git merge-base --is-ancestor "${TAG}^{commit}" origin/main; then
+            echo "el tag ${TAG} no está en main: no se publica." >&2
+            exit 1
+          fi
+          padres="$(git rev-list --parents -n 1 "${TAG}^{commit}" | wc -w)"
+          if [ "${padres}" -ne 3 ]; then
+            echo "el commit de ${TAG} no es un merge commit (padres: $((padres - 1)))." >&2
+            echo "el tag va sobre el merge del pull request a main." >&2
+            exit 1
+          fi
+
+          # 2) La versión tiene que estar escrita en el changelog.
+          if ! grep -qE "^## \[${version}\]" CHANGELOG.md; then
+            echo "CHANGELOG.md no tiene una sección para ${version}." >&2
+            exit 1
+          fi
+          echo "tag ${TAG}: merge de main con sección en el changelog"
+
+      - name: deja las notas de la versión
+        env:
+          TAG: ${{ github.ref_name }}
+        run: tools/changelog.sh notes "${TAG#v}" > release-notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 1
+
+  entrega:
+    name: entrega
+    needs: guarda
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - name: las pruebas pasan antes de empaquetar
+        run: |
+          go test ./...
+          tools/hooks/spdx.sh
+          tools/hooks/permisos.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+      - name: construir y publicar
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean --release-notes=release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: resumen
+        run: |
+          {
+            echo "### ${GITHUB_REF_NAME}"
+            echo
+            gh release view "${GITHUB_REF_NAME}" --json assets \
+              --template '{{range .assets}}- `{{.name}}` — {{.size}} bytes{{"\n"}}{{end}}'
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

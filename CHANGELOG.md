@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A tag on `main` delivers the release: `.github/workflows/release.yml` checks that the tag sits on
+  the merge commit of the release pull request and that the version exists in this file, and then
+  builds and publishes `.deb` and `.rpm` packages for `amd64` and `arm64` — binary in `/usr/bin`, menu
+  entry, icons, user unit and docs — plus the plain `tar.gz` archives and `checksums.txt`. The version
+  inside each binary comes from the tag.
 - Run as a daemon: `--daemon` subscribes, shows every message as a notification and asks for the
   decisions its actions carry, until it is told to stop. `SIGTERM` and `SIGINT` end it in well under
   a second, killing any dialog it opened, and the log goes to stderr at a level set by `--log-level`
