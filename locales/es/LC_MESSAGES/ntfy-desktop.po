@@ -39,3 +39,210 @@ msgstr "sin herramienta de diálogo"
 #: cmd/ntfy-desktop/main.go
 msgid "prints the version and exits"
 msgstr "muestra la versión y termina"
+
+#: internal/config/config.go
+msgid "must not be empty"
+msgstr "no puede estar vacío"
+
+#: internal/config/config.go
+msgid "must be an http or https URL"
+msgstr "tiene que ser una URL http o https"
+
+#: internal/config/config.go
+msgid "must not have a query or a fragment"
+msgstr "no puede tener query ni fragmento"
+
+#: internal/config/config.go
+msgid "must be 1 to 64 characters of letters, digits, dashes or underscores"
+msgstr "tiene que tener de 1 a 64 caracteres: letras, dígitos, guiones o guiones bajos"
+
+#: internal/config/config.go
+msgid "must not contain a colon"
+msgstr "no puede contener dos puntos"
+
+#: internal/config/config.go
+msgid "must not contain control characters"
+msgstr "no puede contener caracteres de control"
+
+#: internal/config/config.go
+msgid "requires a user name"
+msgstr "necesita un nombre de usuario"
+
+#: internal/config/config.go
+msgid "requires a password"
+msgstr "necesita una contraseña"
+
+#: internal/config/toml.go
+msgid "expected key = value"
+msgstr "se esperaba clave = valor"
+
+#: internal/config/toml.go
+msgid "invalid key"
+msgstr "clave inválida"
+
+#: internal/config/toml.go
+msgid "value must be a quoted string"
+msgstr "el valor tiene que ir entre comillas"
+
+#: internal/config/toml.go
+msgid "unexpected text after the closing quote"
+msgstr "hay texto inesperado después de cerrar las comillas"
+
+#: internal/config/toml.go
+msgid "invalid escape sequence"
+msgstr "secuencia de escape inválida"
+
+#: internal/config/toml.go
+msgid "unterminated quoted value"
+msgstr "valor entre comillas sin cerrar"
+
+#: internal/config/toml.go
+msgid "duplicate key"
+msgstr "clave repetida"
+
+#: internal/config/toml.go
+msgid "unsupported key"
+msgstr "clave no soportada"
+
+#: internal/notify/notify.go
+msgid "Open"
+msgstr "Abrir"
+
+#: internal/dialog/dialog.go
+msgid "Decision"
+msgstr "Decisión"
+
+#: internal/dialog/dialog.go
+msgid "Decision (%d of %d)"
+msgstr "Decisión (%d de %d)"
+
+#: internal/dialog/dialog.go
+msgid "Dismiss"
+msgstr "Descartar"
+
+#: internal/dialog/text.go
+msgid "Choose an action"
+msgstr "Elegí una acción"
+
+#: internal/dialog/zenity.go
+msgid "Select"
+msgstr "Elegir"
+
+#: internal/dialog/zenity.go
+msgid "Action"
+msgstr "Acción"
+
+#: internal/config/config.go
+msgid "must be debug, info, warn or error"
+msgstr "debe ser debug, info, warn o error"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "usage: ntfy-desktop [command] [flags]"
+msgstr "uso: ntfy-desktop [comando] [opciones]"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "run until stopped: subscribe, notify and ask for decisions"
+msgstr "corre hasta que lo detengan: suscribe, avisa y pide decisiones"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "log level: debug, info, warn or error (default: info)"
+msgstr "nivel de registro: debug, info, warn o error (por omisión: info)"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unexpected argument %q"
+msgstr "argumento inesperado %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "cannot run %q and %q at once"
+msgstr "no se pueden pedir %q y %q a la vez"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unknown command %q"
+msgstr "comando desconocido %q"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "invalid log level %q: use debug, info, warn or error"
+msgstr "nivel de registro inválido %q: usá debug, info, warn o error"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "usage: ntfy-desktop publish [topic] [flags]"
+msgstr "uso: ntfy-desktop publish [tema] [opciones]"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "topic to publish to (default: the one in the configuration)"
+msgstr "tema al que publicar (por omisión: el de la configuración)"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "message title"
+msgstr "título del mensaje"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "priority from 1 to 5, or min, low, default, high or max"
+msgstr "prioridad de 1 a 5, o min, low, default, high o max"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "tags, separated by commas"
+msgstr "etiquetas, separadas por comas"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "url to open when the notification is clicked"
+msgstr "URL que se abre al hacer clic en el aviso"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "render the message as Markdown"
+msgstr "muestra el mensaje como Markdown"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the topic is given both as an argument and with --topic"
+msgstr "el tema va como argumento y con --topic a la vez"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "invalid priority %q: use 1 to 5, min, low, default, high or max"
+msgstr "prioridad inválida %q: usá de 1 a 5, min, low, default, high o max"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server did not return a message id"
+msgstr "el servidor no devolvió un identificador de mensaje"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "reading the message from stdin"
+msgstr "leyendo el mensaje de la entrada estándar"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message is larger than %d bytes"
+msgstr "el mensaje supera los %d bytes"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message body is empty: write it to stdin"
+msgstr "el cuerpo del mensaje está vacío: escribilo en la entrada estándar"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server refused to publish to %s: the topic may be read-only, or the credentials may not be allowed to write to it"
+msgstr "el servidor rechazó publicar en %s: puede que el tema sea de sólo lectura o que las credenciales no tengan permiso de escritura"
+
+#: cmd/ntfy-desktop/publish.go
+msgid "publishing to %s failed"
+msgstr "no se pudo publicar en %s"
+#: cmd/ntfy-desktop/commands.go
+msgid "lists the messages kept in the local history"
+msgstr "lista los mensajes guardados en el historial local"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "with history, lists only the messages that have not been read"
+msgstr "con history, lista sólo los mensajes que no se leyeron"
+
+#: cmd/ntfy-desktop/commands.go
+msgid "--unread only makes sense with history"
+msgstr "--unread sólo tiene sentido con history"
+
+#: cmd/ntfy-desktop/history.go
+msgid "the history is empty"
+msgstr "el historial está vacío"
+
+#: cmd/ntfy-desktop/history.go
+msgid "no unread messages"
+msgstr "no hay mensajes sin leer"
+
+#: cmd/ntfy-desktop/history.go
+msgid "(no title)"
+msgstr "(sin título)"

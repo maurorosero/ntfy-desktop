@@ -114,10 +114,14 @@ because the project has a single maintainer; **the checks are what gate the merg
 ## Branches: work on `devs`, release through `main`
 
 ```
-devs     working branch. Commits and pushes go here directly. Integration.
-main     what gets released. Only receives merges from devs, always through a pull request.
+devs     the working branch, the only permanent one locally. Direct pushes.
+main     lives ONLY on the remote. Never cloned, never checked out locally.
 topic    feat/…, fix/…, chore/…: for changes that should not sit half-done on devs.
 ```
+
+**`main` does not exist locally.** Do not create the branch, do not `git switch main`, do not
+commit there. The only way in is a `devs -> main` pull request merged on GitHub; the result is
+read through `origin/main`, which is a remote-tracking ref.
 
 ### Day to day
 
@@ -144,8 +148,12 @@ git branch -d feat/something
 ```sh
 gh pr create --base main --head devs --title "..." --body "..."
 gh pr checks <n>           # the four checks must be green
-gh pr merge <n> --merge        # a merge commit marks the release
-git switch main && git pull && git tag -a v0.x.y -m "..." && git push origin v0.x.y
+gh pr merge <n> --merge        # a merge commit marks the release on the remote
+
+# tag the published merge without creating main locally
+git fetch origin main
+git tag -a v0.x.y -m "..." origin/main
+git push origin v0.x.y
 ```
 
 Releases land with a **merge commit**, not a rebase. Each release is then an explicit, immutable
@@ -185,8 +193,47 @@ At release time:
 tools/changelog.sh prepare v0.1.0   # builds the section, removes the used fragments
 ```
 
+**Documentation travels with the change.** If there are `added`, `changed`, `deprecated` or
+`removed` fragments, the same commit must touch `README.md`, `plan/`, `AGENTS.md` or
+`CONTRIBUTING.md`. If that genuinely does not apply — a minimal user-visible change — the
+fragment carries a `Docs: none` line, which is not copied into the changelog.
+
 CI enforces it: a pull request to `devs` reports pending fragments; a pull request to `main`
-**fails** if `CHANGELOG.md` did not change against `main`.
+**fails** if `CHANGELOG.md` did not change against `main`; both fail when user-visible changes
+arrive without documentation. Check locally before opening the pull request:
+
+```sh
+tools/changelog.sh check origin/devs
+```
+
+**A pull request to `main` cannot be merged while the changelog or the documentation is missing.**
+GitHub does not stop you from *opening* a pull request, but it stops the merge: the checks are
+required on `main`. The only exception is a **priority fix**, marked with the `hotfix` label: the
+check lets it through and records it in the job (`::warning::gate saltado`). Whatever is skipped
+stays visible.
+
+`hotfix` is not a shortcut for comfortable changes: the pull request record shows when it is used.
+
+## Preparing a release
+
+The mechanical part is the repository's job; the editorial part is an agent's task.
+
+```sh
+tools/release-prep.sh v0.2.0    # dossier: fragments, commits, files, docs to review
+```
+
+With that dossier the agent does three things, in order:
+
+1. **Write the changelog** from the user's point of view: what the program can do now, or what
+   stopped breaking. No internal jargon, no commit hashes, nothing that the fragments and the
+   diff do not support.
+2. **Update the documentation** that actually changed — scope, process, dependencies. If nothing
+   changed, say so and leave it.
+3. **Update the README** only if what the program does, how it is installed or how it is
+   configured changed. The README describes the real state: a feature that does not exist yet is
+   not announced.
+
+Then `tools/changelog.sh prepare v0.2.0`, `make check`, signed commit.
 
 ## Reporting bugs
 

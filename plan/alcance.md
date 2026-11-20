@@ -75,8 +75,38 @@ Dos modos, y sólo dos por ahora:
 | **Sin credenciales** | topic público | sólo la URL del servidor y el topic |
 | **Usuario y contraseña** | topic protegido | HTTP Basic con el par configurado |
 
-La configuración declara el modo; si falta el par, se asume el primero. Un token (bearer) queda
-como variante a evaluar si un servidor lo exige.
+La configuración declara el modo: sin credenciales cuando no hay ni `user` ni `password`, HTTP
+Basic cuando están las dos. Un token (bearer) queda como variante a evaluar si un servidor lo
+exige.
+
+Media pareja —usuario sin contraseña, o contraseña sin usuario— **no** es un modo: es un error de
+configuración y se rechaza al cargar, con el nombre de la clave que falta. Suscribirse en
+silencio sin credenciales a un topic protegido se vería como un topic vacío, no como un error.
+
+## 4.3 Configuración
+
+Un solo archivo, escrito por el usuario. El paquete nunca lo crea.
+
+```
+os.UserConfigDir()/ntfy-desktop/config.toml     # normalmente ~/.config/ntfy-desktop/config.toml
+```
+
+`os.UserConfigDir()` respeta `XDG_CONFIG_HOME`, así que la ruta no se escribe a mano. El archivo
+es TOML, y de TOML se acepta el subconjunto que hace falta: comentarios, líneas en blanco y una
+asignación `clave = "valor"` por línea, con los escapes `\"`, `\\`, `\n`, `\t` y `\r`. Lo que no
+entra en ese subconjunto se rechaza con el número de línea: una clave mal escrita no se ignora en
+silencio.
+
+```toml
+server    = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
+topic     = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-]
+user      = "andrea"                     # opcional, junto con password
+password  = "…"                          # opcional, junto con user
+log-level = "info"                       # opcional: debug, info, warn o error
+```
+
+Sin `user` ni `password` el cliente se suscribe sin credenciales. Las secciones `[tabla]` todavía
+no se aceptan: hoy la configuración es de una sola suscripción y las claves van sueltas.
 
 ## 5. Funcionalidades de un cliente ntfy
 
@@ -105,7 +135,7 @@ La columna Estado define qué entra en cada hito.
 |---|---|
 | Título, cuerpo, prioridad, etiquetas, hora, topic | **núcleo** |
 | Abrir el enlace del mensaje (`click`) | **núcleo** |
-| Historial local y estado leído/no leído | siguiente |
+| Historial local y estado leído/no leído | **núcleo**: `internal/history` y el comando `history`; falta que el daemon lo alimente |
 | Markdown en el cuerpo | siguiente |
 | Adjuntos: mostrar, descargar, abrir | siguiente |
 | Icono propio del mensaje (`icon`) | después |
@@ -128,8 +158,8 @@ La columna Estado define qué entra en cada hito.
 
 | Función | Estado |
 |---|---|
-| Enviar mensaje: cuerpo y título | siguiente |
-| Prioridad, etiquetas, enlace, markdown | siguiente |
+| Enviar mensaje: cuerpo y título | **núcleo** |
+| Prioridad, etiquetas, enlace, markdown | **núcleo** |
 | Adjunto por URL (`attach`) | siguiente |
 | Adjunto por archivo (subida) | después |
 | Entrega programada (`X-Delay`) | después |
@@ -140,8 +170,8 @@ La columna Estado define qué entra en cada hito.
 | Función | Estado |
 |---|---|
 | Configuración: servidor, topic, credenciales | **núcleo** |
-| Registro de diagnóstico | **núcleo** |
-| Arranque con la sesión (servicio de usuario) | siguiente |
+| Registro de diagnóstico con nivel configurable (`log-level`, `--log-level`) | **núcleo** |
+| Arranque con la sesión (servicio de usuario) y cierre limpio con `SIGTERM` | **núcleo** |
 | Ajustes por topic: silenciar, prioridad mínima | siguiente |
 | Varios perfiles de servidor | después |
 | Bandeja del sistema | después (requiere D-Bus) |
@@ -202,6 +232,7 @@ partir por partir.
 cmd/ntfy-desktop/     composición: flags, cableado, arranque. Sin lógica de producto.
 internal/ntfy/        protocolo: stream JSON, reconexión, since, autenticación, publicar
 internal/queue/       cola de peticiones y su estado
+internal/action/      ejecución de la acción elegida: `view` y `http`
 internal/history/     almacenamiento local de mensajes
 internal/config/      carga y validación de la configuración
 internal/notify/      contrato Notifier + implementación por D-Bus
@@ -252,7 +283,7 @@ Decidido. Motivos, en orden:
 | Transporte: **ntfy**, URL del servidor por configuración | protocolo abierto; cualquier instancia |
 | Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
 | Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
-| Decisión: **`kdialog --menu`** en Plasma, botones del aviso en GNOME | único mecanismo que dibuja botones, persiste y permite etiquetas propias traducidas |
+| Decisión: **`kdialog` con botones** en Plasma, **`zenity`** con botones en GNOME | dibuja botones reales, persiste y permite etiquetas propias traducidas en los dos |
 | **Idiomas: inglés (fuente) y español**, gettext `.po` | formato que el ecosistema ya usa; el resto entra por aporte |
 | **Cola de a una petición** | N2 |
 | **Sin Qt ni GTK**: adaptador por `exec`, detección en ejecución | una sola compilación, nativo en cada escritorio |
@@ -403,10 +434,16 @@ la misma lógica que la identidad. Cadena de respaldo: `es_PA` → `es` → `en`
 | Mensajes de error y registro | Los valores de configuración |
 | Formatos de fecha y hora | — |
 
-**Consecuencia en el diseño de diálogos**: con `kdialog --yesnocancel` las etiquetas las pone
-KDE en *su* idioma, no las nuestras. Para que los botones digan lo que el mensaje pide
-—"Aprobar"/"Rechazar"— hay que usar `--menu` con las etiquetas del catálogo. Eso confirma
-`--menu` como la opción del adaptador de KDE.
+**Consecuencia en el diseño de diálogos**: los dos adaptadores renombran sus botones desde el
+catálogo, así que las etiquetas son nuestras y del idioma del usuario: `kdialog --yes-label`,
+`--no-label` y `--cancel-label`, y `zenity --ok-label`, `--extra-button` y `--cancel-label`.
+Con dos acciones se piden con botones reales —un clic, no una lista más un botón—; con una sola,
+un botón; con tres o más, la lista, porque ninguno de los dos tiene más botones.
+
+Dos detalles que costaron verificar y están anotados en el código: `kdialog` devuelve `0` para el
+sí, `1` para el no y `2` para cancelar, y **zenity devuelve `1` para su botón extra por
+compatibilidad con 3.x — el mismo código que su cancelar**, así que hay que pasarle
+`ZENITY_EXTRA` para poder distinguirlos.
 
 **Control en integración continua**
 

@@ -1,27 +1,41 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Unidad de usuario: arranca el cliente junto con la sesión gráfica.
-# NOTA: el modo --daemon se implementa en el hito 1 del plan. Hasta entonces,
-# habilitar esta unidad sólo arranca el binario y termina.
+# User unit: starts the client with the graphical session, so messages arrive
+# without anybody opening a terminal.
+#
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now ntfy-desktop.service
+#   journalctl --user -u ntfy-desktop -f
 
 [Unit]
 Description=ntfy-desktop client
 Documentation=https://github.com/maurorosero/ntfy-desktop
 PartOf=graphical-session.target
 After=graphical-session.target
+# A configuration that is broken fails at once, so the unit is restarted a few
+# times and then gives up: without this limit the journal fills with the same
+# line forever.
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/ntfy-desktop --daemon
+# SIGTERM ends the process in well under a second; this is only a backstop for
+# a dialog or a call that does not let go.
+TimeoutStopSec=5
 Restart=on-failure
-RestartSec=5
+RestartSec=2
 
-# Sólo lo necesario: sin acceso amplio al sistema.
+# Only what the program needs. The dialog tool talks to the session's display,
+# which on X11 lives in /tmp/.X11-unix, so the unit keeps the real /tmp.
 NoNewPrivileges=true
-PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=%h/.config/ntfy-desktop %h/.local/share/ntfy-desktop
+# The leading dash: a fresh account has no such directories yet, and a missing
+# path must not keep the unit from starting. The cache is where the history
+# lives; without it here the client runs but cannot remember anything.
+ReadWritePaths=-%h/.config/ntfy-desktop -%h/.local/share/ntfy-desktop -%h/.cache/ntfy-desktop
 
 [Install]
 WantedBy=graphical-session.target

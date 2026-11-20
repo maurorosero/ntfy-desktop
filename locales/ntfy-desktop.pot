@@ -39,3 +39,209 @@ msgstr ""
 #: cmd/ntfy-desktop/main.go
 msgid "prints the version and exits"
 msgstr ""
+
+#: internal/config/config.go
+msgid "must not be empty"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must be an http or https URL"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not have a query or a fragment"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must be 1 to 64 characters of letters, digits, dashes or underscores"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not contain a colon"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must not contain control characters"
+msgstr ""
+
+#: internal/config/config.go
+msgid "requires a user name"
+msgstr ""
+
+#: internal/config/config.go
+msgid "requires a password"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "expected key = value"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "invalid key"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "value must be a quoted string"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unexpected text after the closing quote"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "invalid escape sequence"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unterminated quoted value"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "duplicate key"
+msgstr ""
+
+#: internal/config/toml.go
+msgid "unsupported key"
+msgstr ""
+
+#: internal/notify/notify.go
+msgid "Open"
+msgstr ""
+
+#: internal/dialog/dialog.go
+msgid "Decision"
+msgstr ""
+
+#: internal/dialog/dialog.go
+msgid "Decision (%d of %d)"
+msgstr ""
+
+#: internal/dialog/dialog.go
+msgid "Dismiss"
+msgstr ""
+
+#: internal/dialog/text.go
+msgid "Choose an action"
+msgstr ""
+
+#: internal/dialog/zenity.go
+msgid "Select"
+msgstr ""
+
+#: internal/dialog/zenity.go
+msgid "Action"
+msgstr ""
+
+#: internal/config/config.go
+msgid "must be debug, info, warn or error"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "usage: ntfy-desktop [command] [flags]"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "run until stopped: subscribe, notify and ask for decisions"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "log level: debug, info, warn or error (default: info)"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unexpected argument %q"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "cannot run %q and %q at once"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "unknown command %q"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "invalid log level %q: use debug, info, warn or error"
+msgstr ""
+
+msgstr ""
+#: cmd/ntfy-desktop/publish.go
+msgid "usage: ntfy-desktop publish [topic] [flags]"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "topic to publish to (default: the one in the configuration)"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "message title"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "priority from 1 to 5, or min, low, default, high or max"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "tags, separated by commas"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "url to open when the notification is clicked"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "render the message as Markdown"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the topic is given both as an argument and with --topic"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "invalid priority %q: use 1 to 5, min, low, default, high or max"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server did not return a message id"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "reading the message from stdin"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message is larger than %d bytes"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the message body is empty: write it to stdin"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the server refused to publish to %s: the topic may be read-only, or the credentials may not be allowed to write to it"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "publishing to %s failed"
+#: cmd/ntfy-desktop/commands.go
+msgid "lists the messages kept in the local history"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "with history, lists only the messages that have not been read"
+msgstr ""
+
+#: cmd/ntfy-desktop/commands.go
+msgid "--unread only makes sense with history"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "the history is empty"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "no unread messages"
+msgstr ""
+
+#: cmd/ntfy-desktop/history.go
+msgid "(no title)"

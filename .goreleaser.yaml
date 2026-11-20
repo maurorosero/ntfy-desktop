@@ -30,15 +30,68 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# The release body is the changelog section for the tag, written by hand and
+# passed with --release-notes: the commit list would say the same in worse words.
 changelog:
-  use: github
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^ci:"
+  disable: true
+
+# Los paquetes son lo que se instala: el tar.gz queda para quien no use el
+# gestor de su distribución. La unidad del paquete apunta a /usr/bin, que es
+# donde va el binario cuando lo instala el sistema.
+nfpms:
+  - id: paquetes
+    package_name: ntfy-desktop
+    vendor: ROSERO ONE
+    homepage: https://github.com/maurorosero/ntfy-desktop
+    maintainer: Mauro Rosero <mauro@rosero.one>
+    description: |-
+      An ntfy client for the Linux desktop.
+      Subscribes to a topic, shows what arrives as native notifications and asks
+      for decisions through the desktop's own dialog.
+    license: GPL-3.0-or-later
+    formats:
+      - deb
+      - rpm
+    section: utils
+    priority: optional
+    bindir: /usr/bin
+    # El cliente funciona sin diálogo: muestra avisos igual. Por eso los
+    # herramientas de diálogo son recomendación, no dependencia.
+    recommends:
+      - kdialog
+      - zenity
+    contents:
+      - src: packaging/ntfy-desktop.desktop
+        dst: /usr/share/applications/ntfy-desktop.desktop
+      - src: packaging/ntfy-desktop.service
+        dst: /usr/lib/systemd/user/ntfy-desktop.service
+      - src: assets/icon/ntfy-desktop.svg
+        dst: /usr/share/icons/hicolor/scalable/apps/ntfy-desktop.svg
+      - src: assets/icon/ntfy-desktop-64.png
+        dst: /usr/share/icons/hicolor/64x64/apps/ntfy-desktop.png
+      - src: assets/icon/ntfy-desktop-128.png
+        dst: /usr/share/icons/hicolor/128x128/apps/ntfy-desktop.png
+      - src: assets/icon/ntfy-desktop-256.png
+        dst: /usr/share/icons/hicolor/256x256/apps/ntfy-desktop.png
+      - src: assets/icon/ntfy-desktop-512.png
+        dst: /usr/share/icons/hicolor/512x512/apps/ntfy-desktop.png
+      - src: LICENSE
+        dst: /usr/share/doc/ntfy-desktop/LICENSE
+      - src: NOTICE
+        dst: /usr/share/doc/ntfy-desktop/NOTICE
+      - src: README.md
+        dst: /usr/share/doc/ntfy-desktop/README.md
+      - src: docs/usage.md
+        dst: /usr/share/doc/ntfy-desktop/usage.md
+      - src: docs/configuration.md
+        dst: /usr/share/doc/ntfy-desktop/configuration.md
+      - src: docs/decisions.md
+        dst: /usr/share/doc/ntfy-desktop/decisions.md
 
 release:
   footer: |
-    Binarios sin cgo para linux/amd64 y linux/arm64.
+    Paquetes `.deb` y `.rpm` para amd64 y arm64, más los binarios sueltos en tar.gz sin cgo.
     Verificación: `sha256sum -c checksums.txt`
+
+    El paquete instala el binario en `/usr/bin`, el acceso de menú, los iconos y la unidad de
+    usuario; la configuración es tuya, en `~/.config/ntfy-desktop/config.toml`.

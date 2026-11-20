@@ -232,13 +232,17 @@ igual. No se edita el About en la web sin actualizar el archivo.
 ## 8.2 Flujo de ramas — obligatorio
 
 ```
-devs     rama de trabajo. Acá se commitea y se pushea directo. Es la integración.
-main     lo publicado. Sólo recibe merges desde devs, y siempre por PR. Tags desde acá.
+devs     rama de trabajo, la única permanente en local. Push directo.
+main     vive SÓLO en el remoto. No se clona, no se toca desde acá: se mergea por PR.
 tema     feat/…, fix/…, chore/…: para cambios que no conviene hacer sobre devs.
 ```
 
+**`main` no existe en local.** No se crea la rama, no se hace `git switch main`, no se commitea
+ahí. El único camino de entrada es un PR `devs → main` que se mergea en GitHub; el resultado se
+consulta con `origin/main`, que es una referencia remota, no una rama.
+
 `devs` **acepta push directo**: no hace falta PR para trabajar. El ciclo normal es commitear y
-pushear ahí. `main` es la única puerta: rechaza el push directo, también para el dueño.
+pushear ahí.
 
 ### Trabajo diario
 
@@ -266,9 +270,19 @@ git branch -d feat/algo
 ```sh
 gh pr create --base main --head devs --title "…" --body "…"
 gh pr checks <n>           # tienen que estar los cuatro en verde
-gh pr merge <n> --merge        # commit de merge: el release queda marcado
-git switch main && git pull && git tag -a v0.x.y -m "…" && git push origin v0.x.y
+gh pr merge <n> --merge        # commit de merge: el release queda marcado en el remoto
+
+# el tag se corta sobre el merge ya publicado, sin crear main en local
+git fetch origin main
+git tag -a v0.x.y -m "…" origin/main
+git push origin v0.x.y
 ```
+
+**El push del tag es la entrega**: `.github/workflows/release.yml` verifica que el tag esté sobre
+el merge de `main` y que la versión exista en `CHANGELOG.md`, y sólo entonces construye con
+`goreleaser` los binarios `linux/amd64` y `linux/arm64` de esa versión y los publica con sus
+checksums. El número dentro del binario sale del tag, así que `ntfy-desktop --version` no puede
+mentir. No se compila a mano: si el tag está mal puesto, el workflow falla y no hay artefactos.
 
 **Se publica con commit de merge, no con rebase.** Así cada release queda como un punto
 explícito en `main`, `devs` siempre es ancestro suyo, y no hace falta ningún paso de
@@ -318,8 +332,54 @@ git add CHANGELOG.md .changes && git commit -s -m "Changelog: 0.1.0"
 git push origin devs                # y después el PR devs → main
 ```
 
+**La documentación viaja con el cambio.** Si hay fragmentos de tipo `added`, `changed`,
+`deprecated` o `removed`, el mismo commit tiene que tocar `README.md`, `plan/`, `AGENTS.md` o
+`CONTRIBUTING.md`. Si de verdad no aplica —un cambio visible mínimo—, el fragmento lleva una
+línea `Docs: none` y esa línea no se copia al changelog.
+
 CI lo hace cumplir: en un PR a `devs` informa los fragmentos pendientes; en un PR a `main`
-**falla** si `CHANGELOG.md` no cambió respecto de `main`.
+**falla** si `CHANGELOG.md` no cambió respecto de `main`, y en ambos casos falla si hay cambios
+visibles sin documentación acompañando. Antes de abrir el PR se comprueba en local:
+
+```sh
+tools/changelog.sh check origin/devs
+```
+
+**El PR a `main` no se mergea si falta el changelog o la documentación.** GitHub no impide *abrir*
+un PR, pero sí mergearlo: los checks son obligatorios en `main`. La única excepción es un **fix
+prioritario**, y se marca con la etiqueta `hotfix` en el PR: el check deja pasar y deja constancia
+en el job (`::warning::gate saltado`). Lo que se saltee queda a la vista, no se pierde.
+
+Un hotfix no es una puerta para cambios cómodos: si se usa para algo que no era urgente, el
+registro del PR lo muestra.
+
+## 8.4 Preparar un release — tarea del agente
+
+La parte mecánica la hace el repo; la editorial la hace el agente.
+
+```sh
+tools/release-prep.sh v0.2.0
+```
+
+Eso arma `.changes/release-0.2.0.md` (ignorado por git) con: fragmentos pendientes, commits
+desde el último tag, archivos tocados y la lista de documentos a revisar. Con ese expediente, el
+agente hace **tres tareas**, en este orden:
+
+1. **Escribir el changelog.** Desde el punto de vista de quien usa el programa: qué puede hacer
+   ahora que antes no, o qué dejó de romperse. Sin jerga interna, sin hashes de commit, sin
+   inventar nada que no esté en los fragmentos o en el diff. Una línea por cambio; dos como
+   máximo si hace falta contexto. Los cambios internos no entran.
+2. **Actualizar la documentación.** Sólo la que de verdad cambió: `plan/alcance.md` si cambió el
+   alcance o una decisión, `AGENTS.md`/`CONTRIBUTING.md` si cambió el proceso, `NOTICE` si cambió
+   una dependencia. Si nada cambió, se dice y no se toca.
+3. **Actualizar el README.** Sólo si cambió lo que el programa hace, cómo se instala o cómo se
+   configura. El README describe el estado real: si una función todavía no existe, no se anuncia
+   como si existiera.
+
+Después: `tools/changelog.sh prepare v0.2.0`, `make check`, commit firmado.
+
+**Regla que no se negocia**: el agente no inventa funciones. Si el expediente no lo respalda, no
+va al changelog ni al README.
 
 ## 9. Comandos
 
@@ -341,6 +401,8 @@ tools/hooks/spdx.sh       cabeceras de licencia
 tools/hooks/dco.sh        firmas de commit
 tools/hooks/gitleaks.sh   secretos (si gitleaks está instalado)
 tools/repo-meta.sh        sincroniza Description y temas del repositorio remoto
+tools/changelog.sh        fragmentos y sección de versión del changelog
+tools/release-prep.sh     expediente de release para que el agente escriba
 ```
 
 ---
