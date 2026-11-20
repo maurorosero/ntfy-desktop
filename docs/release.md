@@ -75,6 +75,32 @@ A published tag and a published release are not as easy to take back as they are
 that ships binaries stays explicit: a person merges and tags, and the pipeline does the rest the same
 way every time.
 
+## The package repositories
+
+Each release also lands in an apt repository and an rpm repository, served by GitHub Pages from the
+`gh-pages` branch of this same repository:
+
+```
+apt  https://maurorosero.github.io/ntfy-desktop/apt     suite stable, component main
+rpm  https://maurorosero.github.io/ntfy-desktop/rpm     x86_64 and aarch64
+key  https://maurorosero.github.io/ntfy-desktop/keys/repo-key.asc
+```
+
+`repository.yml` builds them: it takes the `.deb` and `.rpm` of the release, adds them to the pool
+that is already there — old versions stay installable — rebuilds `Packages` per architecture, writes
+and signs `Release` (`InRelease` and `Release.gpg`), rebuilds `repodata` per architecture and signs
+`repomd.xml`. It runs when a release is published, and by hand (`workflow_dispatch` with a tag) to
+rebuild the index.
+
+The index is generated from inside `apt/` so the `Filename:` fields are relative to the repository
+root: with `apt/pool/...` there, apt asked for `/apt/apt/pool/...` and every download was a 404.
+
+**The signing key is the repository's own**, not anyone's personal key: `ntfy-desktop repository
+signing <repo@rosero.one>`, ed25519. The private half lives in the `APT_SIGNING_KEY` secret and in
+the vault; the public half is exported from the same keyring at publish time, so the published key
+and the signing key cannot drift. Rotating it means publishing the new key and telling users to
+replace `/etc/apt/keyrings/ntfy-desktop.asc`.
+
 ## Checking a release
 
 ```sh

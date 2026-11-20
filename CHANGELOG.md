@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The apt repository listed its packages as `apt/pool/...` while the repository URL already ends
+  in `/apt`, so every download was a 404. The index is now built from inside `apt/`, and
+  `apt-get download ntfy-desktop` fetches the package whose checksum the index announces.
 - The first delivery attempt stopped before publishing anything: goreleaser only builds from a
   clean tree, and the release notes were written inside it. They now go outside the work tree,
   so a tag on `main` reaches the packages without a manual step.

@@ -49,29 +49,26 @@ jobs:
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "publicando ${tag}"
 
-      - uses: actions/checkout@v7
-        with:
-          ref: gh-pages
-          path: sitio
-        continue-on-error: true
-
-      - name: la rama gh-pages existe
+      - name: preparar la rama gh-pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -d sitio/.git ]; then
+          set -eu
+          url="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads "${url}" gh-pages >/dev/null 2>&1; then
+            echo "la rama gh-pages ya existe: se parte de ella"
+            git clone -q --depth 1 --branch gh-pages "${url}" sitio
+          else
             echo "no hay rama gh-pages todavía: se crea con esta corrida"
             mkdir -p sitio
             git -C sitio init -q
             git -C sitio checkout -q -b gh-pages
-            git -C sitio remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            git -C sitio remote add origin "${url}"
           fi
 
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.tag.outputs.tag }}
-          path: fuentes
-          fetch-depth: 0
-
       - name: paquetes del release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p paquetes
           gh release download "${{ steps.tag.outputs.tag }}" \
@@ -101,15 +98,16 @@ jobs:
           cp -n paquetes/*amd64.rpm "sitio/rpm/x86_64/" 2>/dev/null || true
           cp -n paquetes/*arm64.rpm "sitio/rpm/aarch64/" 2>/dev/null || true
           cp -f paquetes/checksums.txt "sitio/$TAG-checksums.txt" 2>/dev/null || true
-          cp -f fuentes/packaging/apt/repo-key.asc "sitio/keys/repo-key.asc"
 
           # ---- apt ----
           for arch in amd64 arm64; do
             dir="sitio/apt/dists/${SUITE}/${COMPONENT}/binary-${arch}"
             mkdir -p "${dir}"
+            # Se corre desde dentro de apt/: el Filename que escribe es relativo a
+            # la raíz del repositorio, y la URL base ya termina en /apt.
             (
-              cd sitio
-              dpkg-scanpackages --arch "${arch}" apt/pool > "apt/dists/${SUITE}/${COMPONENT}/binary-${arch}/Packages" 2>/dev/null
+              cd sitio/apt
+              dpkg-scanpackages --arch "${arch}" pool > "dists/${SUITE}/${COMPONENT}/binary-${arch}/Packages" 2>/dev/null
             )
             gzip -9kc "${dir}/Packages" > "${dir}/Packages.gz"
           done
@@ -158,6 +156,10 @@ jobs:
               -o "sitio/rpm/${arch}/repodata/repomd.xml.asc" "sitio/rpm/${arch}/repodata/repomd.xml"
           done
 
+          # La clave que se publica es la que firma: sale de aquí, no del árbol,
+          # así no puede quedar desincronizada.
+          gpg --armor --export "${fpr}" > "sitio/keys/repo-key.asc"
+
           gpg --verify "sitio/apt/dists/${SUITE}/InRelease" >/dev/null 2>&1 &&
             echo "InRelease verificado"
           echo "huella de firma: ${fpr}"
@@ -203,4 +205,5 @@ jobs:
           fi
           git commit -q -m "Repositorio: paquetes de ${{ steps.tag.outputs.tag }}"
           git push -q origin gh-pages
+          echo "rama gh-pages actualizada"
           echo "publicado en ${PAGES_URL}"
