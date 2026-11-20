@@ -72,6 +72,8 @@ jobs:
           fetch-depth: 0
 
       - name: paquetes del release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p paquetes
           gh release download "${{ steps.tag.outputs.tag }}" \
