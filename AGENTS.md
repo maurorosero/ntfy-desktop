@@ -72,7 +72,8 @@ Salida: los cinco en verde, con la salida real pegada en el mensaje.
 - `git commit -s` — el `Signed-off-by` es obligatorio (DCO). Sin firma, el PR no se mergea.
 - Mensaje en imperativo, con el **por qué** en el cuerpo.
 - `CHANGELOG.md` si el cambio se nota desde afuera.
-- `main` está protegida: PR, checks requeridos, historial lineal, sin force-push.
+- Ramas: **`tema → devs → main`**. Nunca se commitea en `main` ni en `devs`: las dos rechazan el
+  push directo, también para el dueño.
 
 ---
 
@@ -227,6 +228,24 @@ igual. No se edita el About en la web sin actualizar el archivo.
 - `description.me` — una sola línea, máximo 350 caracteres (lo que GitHub acepta).
 - `about.me` — el texto del About; su última línea `Topics: a, b, c` define los temas.
 - `tools/repo-meta.sh --dry-run` muestra qué aplicaría; sin `--dry-run` aplica con `gh`.
+
+## 8.2 Flujo de ramas
+
+```
+main     lo publicado; tags; sólo recibe merges desde devs
+devs     integración; todo el trabajo llega acá primero
+tema     feat/…, fix/…, docs/…; cortas, se borran al mergear
+```
+
+```sh
+git switch devs && git pull
+git switch -c fix/algo
+git commit -s
+git push -u origin fix/algo
+gh pr create --base devs
+```
+
+`devs` siempre por delante de `main`. Para publicar: PR `devs → main` y tag desde `main`.
 
 ## 9. Comandos
 

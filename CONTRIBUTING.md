@@ -107,9 +107,43 @@ a release with a missing string in either is not released.
 
 ## Review
 
-`main` is protected: pull requests only, required checks, linear history, no force-push, and
-admins are subject to the same rules. Required approvals are zero because the project currently
-has a single maintainer; the checks are what gate the merge.
+`main` and `devs` are protected: pull requests only, required checks, linear history, no
+force-push, and administrators are subject to the same rules. Required approvals are zero
+because the project has a single maintainer; **the checks are what gate the merge**.
+
+## Branches: `topic → devs → main`
+
+Two permanent branches and nothing else:
+
+```
+main     what gets released. Receives merges from devs only; tags are cut here.
+devs     integration. All work lands here first.
+topic    feat/something, fix/something, docs/something: hours or days, deleted on merge.
+```
+
+The flow, in order:
+
+```sh
+git switch devs && git pull
+git switch -c fix/something
+# ... work ...
+git commit -s
+git push -u origin fix/something
+gh pr create --base devs              # 1) topic -> devs
+# once checks pass: merge
+gh pr create --base main --head devs  # 2) devs -> main, when releasing
+```
+
+Rules that keep this from stepping on itself:
+
+- **Never commit on `main` or `devs`.** Both reject direct pushes, the owner included.
+- **`devs` stays ahead of `main`, never the other way round.** If something fixed on `main` is
+  needed in `devs`, merge `main` into `devs`; never rewrite.
+- **One topic, one branch, one PR.** Short branches: if it takes weeks, split it.
+- **Tags are cut from `main`**, never from `devs`.
+- Merge commits created by GitHub are not signed; the DCO check ignores them (`--no-merges`)
+  and reviews only the PR's own commits.
+- Bot commits (Dependabot, Renovate, `[bot]`) are skipped by the DCO check: they cannot sign.
 
 ## Reporting bugs
 
