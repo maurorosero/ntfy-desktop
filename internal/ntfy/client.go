@@ -164,19 +164,37 @@ func (c *Client) stream(ctx context.Context, since string, msgs chan<- Message) 
 
 // endpoint builds the JSON stream URL: <server>/<topic>/json, with since=<id>
 // once there is something to resume from.
+//
+// Several topics travel as one path segment joined with a comma, which is the
+// separator of the protocol: each name is escaped and the commas between them
+// are not. Escaping the joined string would turn the separator into %2C and the
+// server would read one topic with a comma in its name.
 func (c *Client) endpoint(since string) (string, error) {
 	u, err := url.Parse(c.cfg.ServerURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing the server url: %w", err)
 	}
-	u.Path = strings.TrimSuffix(u.Path, "/") + "/" + url.PathEscape(c.cfg.Topic) + "/" + pathJSON
-	u.RawPath = "" // let url rebuild the escaped path
+	base := strings.TrimSuffix(u.Path, "/")
+	u.Path = base + "/" + strings.Join(c.cfg.Topics, ",") + "/" + pathJSON
+	// RawPath keeps the escaped names: url would escape the separators too, and
+	// Path alone would lose the escaping of a name that needs it.
+	u.RawPath = (&url.URL{Path: base}).EscapedPath() + "/" + escapedTopics(c.cfg.Topics) + "/" + pathJSON
 	if since != "" {
 		q := u.Query()
 		q.Set("since", since)
 		u.RawQuery = q.Encode()
 	}
 	return u.String(), nil
+}
+
+// escapedTopics escapes each topic name, so the names can be joined with the
+// comma the protocol expects.
+func escapedTopics(topics []string) string {
+	names := make([]string, len(topics))
+	for i, topic := range topics {
+		names[i] = url.PathEscape(topic)
+	}
+	return strings.Join(names, ",")
 }
 
 // StatusError is a response the client cannot use. It keeps the status and

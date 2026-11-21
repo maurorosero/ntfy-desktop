@@ -50,7 +50,7 @@ func parse(data []byte) (*Config, error) {
 
 	cfg := &Config{
 		ServerURL: values[keyServer],
-		Topic:     values[keyTopic],
+		Topics:    splitTopics(values[keyTopic]),
 		User:      values[keyUser],
 		Password:  values[keyPassword],
 		LogLevel:  values[keyLogLevel],
@@ -59,6 +59,21 @@ func parse(data []byte) (*Config, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+// splitTopics turns the value of the topic key into the list of topics. ntfy
+// takes them comma separated and the spaces around a name are typing, not part
+// of it. A name left empty between two commas stays empty on purpose, so the
+// validation can report it instead of reading `casa,,x` as two topics.
+func splitTopics(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	var topics []string
+	for _, name := range strings.Split(value, ",") {
+		topics = append(topics, strings.TrimSpace(name))
+	}
+	return topics
 }
 
 // assignment splits `key = "value"` into its two halves.

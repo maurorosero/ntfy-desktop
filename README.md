@@ -8,7 +8,7 @@ ntfy has a web app, a mobile app and a CLI — but no desktop client for Linux. 
 client: it subscribes to a topic, shows what arrives as native notifications, lets you answer
 requests from a desktop dialog, and publishes messages back.
 
-**Status: pre-release (0.2.0).** The daemon subscribes, notifies, asks for decisions one at a time
+**Status: pre-release (0.3.0).** The daemon subscribes, notifies, asks for decisions one at a time
 and runs the chosen action; `publish` and `history` work from the terminal; the client installs as a
 user service that starts with the graphical session. Verified end to end on KDE Plasma 6.6.7
 (Wayland): a message published from another machine opened a dialog with three labelled buttons, the
@@ -17,8 +17,8 @@ click called the endpoint in the message, and the endpoint received it. See the
 
 ## What it does
 
-- Subscribes to an ntfy topic over the JSON stream, and reconnects with a growing wait when the
-  server goes away.
+- Subscribes to one or more ntfy topics over the JSON stream, and reconnects with a growing wait
+  when the server goes away.
 - Shows each message as a native desktop notification, with the urgency that matches its priority.
 - Opens a desktop dialog for messages that carry actions, one at a time, and runs the chosen action:
   open its link or call its URL. One action is one button, two actions are three buttons labelled
@@ -86,8 +86,8 @@ sudo dnf install ntfy-desktop
 The `.deb` and `.rpm` files are also attached to each release, for a one-off install:
 
 ```sh
-sudo dpkg -i ntfy-desktop_0.2.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
-sudo rpm -i  ntfy-desktop-0.2.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
+sudo dpkg -i ntfy-desktop_0.3.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
+sudo rpm -i  ntfy-desktop-0.3.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
 ```
 
 From source, without root, everything goes to `~/.local`:
@@ -120,7 +120,7 @@ ntfy-desktop history [--unread]
 With no arguments it prints what it detects about the session and exits:
 
 ```sh
-ntfy-desktop 0.2.0
+ntfy-desktop 0.3.0
   user       mrosero
   locale     en
   desktop    kde
@@ -166,11 +166,16 @@ $XDG_CONFIG_HOME/ntfy-desktop/config.toml      # normally ~/.config/ntfy-desktop
 
 ```toml
 server    = "https://ntfy.example.org"   # required, http or https, no query, no fragment
-topic     = "alerts"                     # required: 1 to 64 of [A-Za-z0-9_-]
+topic     = "alerts"                     # required: 1 to 64 of [A-Za-z0-9_-] each, comma separated
 user      = "andrea"                     # optional, together with password
 password  = "…"                          # optional, together with user
 log-level = "info"                       # optional: debug, info, warn or error
 ```
+
+`topic` takes one name, or several separated by commas (`topic = "casa, pruebas"`): the daemon
+subscribes to all of them over one connection and each message keeps its own topic in the
+notification and the history. `publish` sends to one at a time, so with several configured the
+destination is passed as an argument or with `--topic`.
 
 Leave `user` and `password` out to subscribe to a public topic; set both to use HTTP Basic on a
 protected one. Half a pair is a configuration error, not an anonymous subscription. Any other key is

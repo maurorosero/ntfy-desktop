@@ -124,7 +124,7 @@ func TestPublishRequest(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			client := New(config.Config{ServerURL: c.server, Topic: c.topic})
+			client := New(config.Config{ServerURL: c.server, Topics: []string{c.topic}})
 			req, err := client.publishRequest(context.Background(), c.message)
 			if err != nil {
 				t.Fatalf("publishRequest(%+v) = error %v; want no error", c.message, err)
@@ -170,7 +170,7 @@ func TestPublishRequestAuth(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			cfg := config.Config{ServerURL: "https://ntfy.sh", Topic: "alerts", User: c.user, Password: c.pass}
+			cfg := config.Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}, User: c.user, Password: c.pass}
 			req, err := New(cfg).publishRequest(context.Background(), Publish{Body: "hola"})
 			if err != nil {
 				t.Fatalf("publishRequest() = error %v; want no error", err)
@@ -218,7 +218,7 @@ func TestPublishSendsTheMessage(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := New(config.Config{ServerURL: srv.URL, Topic: "casa"})
+	client := New(config.Config{ServerURL: srv.URL, Topics: []string{"casa"}})
 	m, err := client.Publish(context.Background(), Publish{
 		Body:     "hola",
 		Title:    "Prueba",
@@ -289,7 +289,7 @@ func TestPublishReportsTheStatusCode(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			cfg := config.Config{ServerURL: srv.URL, Topic: "alerts", User: "andrea", Password: "s3cr3t"}
+			cfg := config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}, User: "andrea", Password: "s3cr3t"}
 			_, err := New(cfg).Publish(context.Background(), Publish{Body: "hola"})
 			if err == nil {
 				t.Fatalf("Publish() with status %d = no error; want one", c.code)
@@ -321,11 +321,20 @@ func TestPublishWithoutAnID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	m, err := New(config.Config{ServerURL: srv.URL, Topic: "alerts"}).Publish(context.Background(), Publish{Body: "hola"})
+	m, err := New(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}).Publish(context.Background(), Publish{Body: "hola"})
 	if err != nil {
 		t.Fatalf("Publish() = error %v; want no error", err)
 	}
 	if m.ID != "" {
 		t.Errorf("Publish() id = %q; want an empty one for the caller to report", m.ID)
+	}
+}
+
+// TestPublishNeedsOneTopic covers the configuration that names several: a
+// publish goes to one topic, so the client refuses instead of picking one.
+func TestPublishNeedsOneTopic(t *testing.T) {
+	client := New(config.Config{ServerURL: "https://ntfy.sh", Topics: []string{"casa", "pruebas"}})
+	if _, err := client.Publish(context.Background(), Publish{Body: "hola"}); err == nil {
+		t.Fatal("Publish() with two topics = nil; want an error naming the missing choice")
 	}
 }

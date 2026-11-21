@@ -8,7 +8,7 @@ $XDG_CONFIG_HOME/ntfy-desktop/config.toml        # normally ~/.config/ntfy-deskt
 
 ```toml
 server    = "https://ntfy.example.org"   # required: http or https, no query, no fragment
-topic     = "alerts"                     # required: 1 to 64 of [A-Za-z0-9_-]
+topic     = "alerts"                     # required: 1 to 64 of [A-Za-z0-9_-] each, comma separated
 user      = "andrea"                     # optional, together with password
 password  = "…"                          # optional, together with user
 log-level = "info"                       # optional: debug, info, warn or error
@@ -28,12 +28,24 @@ server = "http://10.0.0.5:2586"
 
 ### `topic` — required
 
-The topic to subscribe to: 1 to 64 characters from `[A-Za-z0-9_-]`. It is validated because the
-same string becomes the name of the history file.
+The topic, or the topics, to subscribe to: each one is 1 to 64 characters from `[A-Za-z0-9_-]`,
+and several are written separated by commas, in the order they are read. Every name is validated
+because each one becomes the name of a file of the history.
 
 ```toml
 topic = "casa"
+topic = "casa, pruebas-multi"
+topic = "casa, pruebas-multi, avisos"
 ```
+
+The list is one subscription: the client opens a single stream to `/casa,pruebas-multi/json` and
+the server delivers the messages of all of them, each one carrying its own `topic`. Notifications
+and the history are per topic, as they were with one.
+
+An empty name is an error that names the segment — `topic = "casa,,x"` says `""`, and
+`topic = "casa,pruebas multi"` says `"pruebas multi"` — rather than a subscription that quietly
+lost a topic. `publish` needs one destination: with several configured, pass it as an argument or
+with `--topic`.
 
 ### `user` and `password` — optional, as a pair
 

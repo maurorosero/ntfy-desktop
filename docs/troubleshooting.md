@@ -13,13 +13,14 @@ For a one-off run with everything on: `ntfy-desktop daemon --log-level debug`.
 ## Nothing arrives
 
 1. **Is it running?** `systemctl --user is-active ntfy-desktop` → `active`.
-2. **Did it subscribe?** The first line of the journal names the server, the topic and the mode:
+2. **Did it subscribe?** The first line of the journal names the server, the topics and the mode:
    ```
-   msg=subscribing server=https://ntfy.example.org topic=casa auth=basic
+   msg=subscribing server=https://ntfy.example.org topics=casa auth=basic
    ```
    If it is not there, the configuration could not be read — the line right before says which key.
 3. **Is the topic the same one you published to?** Topics in ntfy are created by publishing, so a
-   typo on either side gives a perfectly working subscription to nothing.
+   typo on either side gives a perfectly working subscription to nothing. With several topics the
+   `topics=` line of the journal lists them all.
 4. **Are the credentials right?** A wrong pair is a 403 the client logs as
    `the subscription failed, retrying` — and it will keep retrying, so the journal fills with the
    same line rather than going quiet.

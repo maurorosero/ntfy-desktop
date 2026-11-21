@@ -163,9 +163,17 @@ func runPublish(ctx context.Context, opts options, tr *i18n.Translator, stdin io
 	// Publishing to another topic is the normal case, so the command line wins
 	// over the file. The credentials and the server are the configured ones:
 	// that is what makes both authentication modes work the same as the daemon.
-	if opts.publish.topic != "" {
-		cfg.Topic = opts.publish.topic
+	//
+	// With several topics in the file there is no default to fall back on, and
+	// picking one of them would be a silent guess: the choice is asked for.
+	switch {
+	case opts.publish.topic != "":
+		cfg.Topics = []string{opts.publish.topic}
+	case len(cfg.Topics) > 1:
+		fmt.Fprintln(stderr, tr.T("the configuration names several topics: say which one to publish to as an argument or with --topic"))
+		return 1
 	}
+	topic := cfg.Topic()
 
 	body, err := readBody(stdin, tr)
 	if err != nil {
@@ -182,7 +190,7 @@ func runPublish(ctx context.Context, opts options, tr *i18n.Translator, stdin io
 		Markdown: opts.publish.markdown,
 	})
 	if err != nil {
-		fmt.Fprintln(stderr, publishFailure(tr, cfg.Topic, err))
+		fmt.Fprintln(stderr, publishFailure(tr, topic, err))
 		return 1
 	}
 	if msg.ID == "" {

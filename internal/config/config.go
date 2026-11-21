@@ -47,6 +47,7 @@ const (
 	msgURL           = "must be an http or https URL"
 	msgNoQuery       = "must not have a query or a fragment"
 	msgTopic         = "must be 1 to 64 characters of letters, digits, dashes or underscores"
+	msgTopicList     = "%q is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores"
 	msgNoColon       = "must not contain a colon"
 	msgNoControl     = "must not contain control characters"
 	msgNeedsUser     = "requires a user name"
@@ -92,11 +93,20 @@ func (a AuthMode) String() string {
 
 // Config is the validated configuration of one subscription.
 type Config struct {
-	ServerURL string // base URL of the server, without the trailing slash
-	Topic     string
+	ServerURL string   // base URL of the server, without the trailing slash
+	Topics    []string // in the order the file names them, without the spaces
 	User      string
 	Password  string
 	LogLevel  string // "" when the file does not set one, so the program decides
+}
+
+// Topic returns the only topic of the configuration, or "" when it names none or
+// several: a caller that can only handle one has to ask which.
+func (c Config) Topic() string {
+	if len(c.Topics) == 1 {
+		return c.Topics[0]
+	}
+	return ""
 }
 
 // AuthMode reports how the client has to authenticate: HTTP Basic when the
@@ -111,8 +121,8 @@ func (c Config) AuthMode() AuthMode {
 // String implements fmt.Stringer without the password, so a configuration can
 // be logged or printed without leaking the secret.
 func (c Config) String() string {
-	return fmt.Sprintf("config{server: %s, topic: %s, user: %q, auth: %s, level: %q}",
-		c.ServerURL, c.Topic, c.User, c.AuthMode(), c.LogLevel)
+	return fmt.Sprintf("config{server: %s, topics: %s, user: %q, auth: %s, level: %q}",
+		c.ServerURL, strings.Join(c.Topics, ","), c.User, c.AuthMode(), c.LogLevel)
 }
 
 // DefaultPath returns the configuration file of the current user.
@@ -155,14 +165,16 @@ func (e *SyntaxError) Error() string {
 }
 
 // ValidationError reports a value that parsed fine but cannot be used. Msg is a
-// gettext msgid and Field is the key it came from.
+// gettext msgid, Field is the key it came from and Args are the values that
+// msgid formats, when it carries verbs.
 type ValidationError struct {
 	Field string
 	Msg   string
+	Args  []any
 }
 
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Field, e.Msg)
+	return fmt.Sprintf("%s: %s", e.Field, fmt.Sprintf(e.Msg, e.Args...))
 }
 
 // validate checks the values and normalises the server URL.
@@ -179,11 +191,21 @@ func (c *Config) validate() error {
 		return &ValidationError{Field: keyServer, Msg: msgNoQuery}
 	}
 
-	if c.Topic == "" {
+	// Every topic is validated with the same pattern, and a list reports which
+	// name is wrong: with several of them, "the topic is invalid" says nothing.
+	switch len(c.Topics) {
+	case 0:
 		return &ValidationError{Field: keyTopic, Msg: msgRequired}
-	}
-	if !topicPattern.MatchString(c.Topic) {
-		return &ValidationError{Field: keyTopic, Msg: msgTopic}
+	case 1:
+		if !topicPattern.MatchString(c.Topics[0]) {
+			return &ValidationError{Field: keyTopic, Msg: msgTopic}
+		}
+	default:
+		for _, topic := range c.Topics {
+			if !topicPattern.MatchString(topic) {
+				return &ValidationError{Field: keyTopic, Msg: msgTopicList, Args: []any{topic}}
+			}
+		}
 	}
 
 	if strings.ContainsRune(c.User, ':') {

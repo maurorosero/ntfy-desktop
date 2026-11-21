@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -21,42 +22,57 @@ func TestParseValid(t *testing.T) {
 		{
 			name: "anonymous topic",
 			in:   "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\n",
-			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts"},
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}},
 		},
 		{
 			name: "user and password",
 			in:   "server = \"https://ntfy.example.org\"\ntopic = \"builds\"\nuser = \"andrea\"\npassword = \"s3cr3t\"\n",
-			want: Config{ServerURL: "https://ntfy.example.org", Topic: "builds", User: "andrea", Password: "s3cr3t"},
+			want: Config{ServerURL: "https://ntfy.example.org", Topics: []string{"builds"}, User: "andrea", Password: "s3cr3t"},
 		},
 		{
 			name: "comments, blank lines and crlf",
 			in:   "# my server\r\n\r\nserver = \"https://ntfy.sh\"  # trailing comment\r\ntopic = \"alerts\"\r\n",
-			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts"},
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}},
 		},
 		{
 			name: "trailing slash is removed",
 			in:   "server = \"https://ntfy.sh/\"\ntopic = \"alerts\"\n",
-			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts"},
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}},
 		},
 		{
 			name: "server with a path prefix",
 			in:   "server = \"https://example.org/ntfy\"\ntopic = \"a_b-1\"\n",
-			want: Config{ServerURL: "https://example.org/ntfy", Topic: "a_b-1"},
+			want: Config{ServerURL: "https://example.org/ntfy", Topics: []string{"a_b-1"}},
 		},
 		{
 			name: "escapes in the password",
 			in:   "server = \"http://localhost:2586\"\ntopic = \"alerts\"\nuser = \"u\"\npassword = \"a\\\"b\\\\c d\"\n",
-			want: Config{ServerURL: "http://localhost:2586", Topic: "alerts", User: "u", Password: "a\"b\\c d"},
+			want: Config{ServerURL: "http://localhost:2586", Topics: []string{"alerts"}, User: "u", Password: "a\"b\\c d"},
 		},
 		{
 			name: "log level",
 			in:   "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nlog-level = \"debug\"\n",
-			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts", LogLevel: "debug"},
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}, LogLevel: "debug"},
+		},
+		{
+			name: "two topics",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"casa,pruebas-multi\"\n",
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"casa", "pruebas-multi"}},
+		},
+		{
+			name: "two topics with spaces around them",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"casa, pruebas-multi\"\n",
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"casa", "pruebas-multi"}},
+		},
+		{
+			name: "three topics keep the written order",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"zeta, alfa , medio\"\n",
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"zeta", "alfa", "medio"}},
 		},
 		{
 			name: "log level in another case",
 			in:   "server = \"https://ntfy.sh\"\ntopic = \"alerts\"\nlog-level = \"WARN\"\n",
-			want: Config{ServerURL: "https://ntfy.sh", Topic: "alerts", LogLevel: "WARN"},
+			want: Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}, LogLevel: "WARN"},
 		},
 	}
 
@@ -66,7 +82,7 @@ func TestParseValid(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parse(%q) = error %v; want no error", c.in, err)
 			}
-			if *got != c.want {
+			if !reflect.DeepEqual(*got, c.want) {
 				t.Errorf("parse(%q) = %+v; want %+v", c.in, *got, c.want)
 			}
 		})
@@ -118,6 +134,41 @@ func TestParseErrors(t *testing.T) {
 			name:    "topic too long",
 			in:      "server = \"https://ntfy.sh\"\ntopic = \"" + strings.Repeat("a", 65) + "\"\n",
 			wantMsg: "topic: must be 1 to 64 characters of letters, digits, dashes or underscores",
+		},
+		{
+			name:    "empty topic in the list",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"casa,,x\"\n",
+			wantMsg: `topic: "" is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores`,
+		},
+		{
+			name:    "trailing comma names the empty topic",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"casa, x ,\"\n",
+			wantMsg: `topic: "" is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores`,
+		},
+		{
+			name:    "empty topic value",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"\"\n",
+			wantMsg: "topic: must not be empty",
+		},
+		{
+			name:    "topic value of only spaces",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"   \"\n",
+			wantMsg: "topic: must not be empty",
+		},
+		{
+			name:    "second topic too long",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"casa," + strings.Repeat("a", 65) + "\"\n",
+			wantMsg: `topic: "` + strings.Repeat("a", 65) + `" is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores`,
+		},
+		{
+			name:    "second topic with a strange character",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"casa,pruebas/multi\"\n",
+			wantMsg: `topic: "pruebas/multi" is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores`,
+		},
+		{
+			name:    "second topic with a comma inside quotes",
+			in:      "server = \"https://ntfy.sh\"\ntopic = \"casa,pruebas multi\"\n",
+			wantMsg: `topic: "pruebas multi" is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores`,
 		},
 		{
 			name:    "user with a colon",
@@ -229,8 +280,8 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load(%q) = error %v; want no error", good, err)
 	}
-	if cfg.Topic != "alerts" {
-		t.Errorf("Load(%q).Topic = %q; want %q", good, cfg.Topic, "alerts")
+	if cfg.Topic() != "alerts" {
+		t.Errorf("Load(%q).Topic = %q; want %q", good, cfg.Topic(), "alerts")
 	}
 
 	_, err = Load(bad)
@@ -261,13 +312,34 @@ func TestDefaultPath(t *testing.T) {
 	}
 }
 
+func TestTopic(t *testing.T) {
+	cases := []struct {
+		name   string
+		topics []string
+		want   string
+	}{
+		{name: "one topic", topics: []string{"casa"}, want: "casa"},
+		{name: "several topics have no single one", topics: []string{"casa", "pruebas"}, want: ""},
+		{name: "no topics", topics: nil, want: ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cfg := Config{Topics: c.topics}
+			if got := cfg.Topic(); got != c.want {
+				t.Errorf("Config{Topics: %q}.Topic() = %q; want %q", c.topics, got, c.want)
+			}
+		})
+	}
+}
+
 func TestAuthMode(t *testing.T) {
 	cases := []struct {
 		name string
 		cfg  Config
 		want AuthMode
 	}{
-		{name: "anonymous", cfg: Config{ServerURL: "https://ntfy.sh", Topic: "t"}, want: AuthNone},
+		{name: "anonymous", cfg: Config{ServerURL: "https://ntfy.sh", Topics: []string{"t"}}, want: AuthNone},
 		{name: "user and password", cfg: Config{User: "andrea", Password: "x"}, want: AuthBasic},
 		{name: "password only", cfg: Config{Password: "x"}, want: AuthNone},
 		{name: "user only", cfg: Config{User: "andrea"}, want: AuthNone},
@@ -284,7 +356,7 @@ func TestAuthMode(t *testing.T) {
 }
 
 func TestStringDoesNotLeakPassword(t *testing.T) {
-	cfg := Config{ServerURL: "https://ntfy.sh", Topic: "alerts", User: "andrea", Password: "s3cr3t"}
+	cfg := Config{ServerURL: "https://ntfy.sh", Topics: []string{"alerts"}, User: "andrea", Password: "s3cr3t"}
 
 	for _, format := range []string{"%v", "%s"} {
 		got := fmt.Sprintf(format, cfg)
@@ -299,6 +371,8 @@ func FuzzParse(f *testing.F) {
 		"",
 		"server = \"https://ntfy.sh\"\ntopic = \"alerts\"\n",
 		"server = \"https://ntfy.sh\"\ntopic = \"a\\\"b\"\n",
+		"server = \"https://ntfy.sh\"\ntopic = \"casa, pruebas\"\n",
+		"server = \"https://ntfy.sh\"\ntopic = \"casa,,x\"\n",
 		"server = \"",
 		"= \"x\"",
 		"server = \"https://ntfy.sh\"\r\ntopic = \"alerts\"\r\n",

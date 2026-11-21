@@ -5,6 +5,7 @@ package ntfy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -116,13 +117,18 @@ func (c *Client) publishRequest(ctx context.Context, p Publish) (*http.Request, 
 }
 
 // publishEndpoint builds the publish URL: <server>/<topic>. It is the same path
-// the subscription uses, without the /json suffix.
+// the subscription uses, without the /json suffix, and it needs exactly one
+// topic: publishing to a list is not something ntfy defines.
 func (c *Client) publishEndpoint() (string, error) {
+	topic := c.cfg.Topic()
+	if topic == "" {
+		return "", errors.New("a publish needs one topic and this configuration names several")
+	}
 	u, err := url.Parse(c.cfg.ServerURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing the server url: %w", err)
 	}
-	u.Path = strings.TrimSuffix(u.Path, "/") + "/" + url.PathEscape(c.cfg.Topic)
+	u.Path = strings.TrimSuffix(u.Path, "/") + "/" + url.PathEscape(topic)
 	u.RawPath = "" // let url rebuild the escaped path
 	return u.String(), nil
 }

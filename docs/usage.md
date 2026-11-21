@@ -42,7 +42,9 @@ printf 'line one\nline two\n' | ntfy-desktop publish --topic alerts --markdown
 ```
 
 The body is **always** read from stdin, so a message that starts with a dash is never taken for a
-flag. The topic is the argument, `--topic`, or the one in the configuration — in that order.
+flag. The topic is the argument, `--topic`, or the one in the configuration — in that order. A
+publish goes to one topic: when the configuration names several and neither the argument nor
+`--topic` says which, the command stops and says how to choose instead of picking one.
 
 | Flag | What it sets |
 |---|---|
