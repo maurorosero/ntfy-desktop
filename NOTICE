@@ -14,8 +14,9 @@ Se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA.
 - **github.com/leonelquinteros/gotext** — Copyright (c) 2016 Leonel Quinteros.
   Licencia MIT. Se usa para cargar los catálogos gettext embebidos.
 - **github.com/esiqveland/notify** — Copyright (c) 2021 Eivind Siqveland Larsen.
-  Licencia BSD-3-Clause. Se usa para dibujar los avisos en el servicio de
-  notificaciones freedesktop.
+  Licencia BSD-3-Clause. Se usa como cliente del servicio de notificaciones
+  freedesktop: compone el aviso y lo envía por D-Bus. Quien lo dibuja es el servicio
+  del escritorio, no esta biblioteca.
 - **github.com/godbus/dbus/v5** — Copyright (c) 2013 Georg Reinke, Google.
   Licencia BSD-2-Clause. El programa abre con él la conexión del bus de sesión —sobre
   la que se monta notify— y la usa directa para preguntar las capacidades del servicio
