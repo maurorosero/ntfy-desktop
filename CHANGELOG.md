@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+## [0.3.5] - 2026-11-21
+
+### Added
+
+- The configuration can be written, checked and changed from the terminal: `ntfy-desktop config` runs a
+  wizard that writes only what you confirm, `--check` verifies file, server, credentials and every
+  topic and exits with 0, 2, 3, 4 or 5, and `--set` or `config topic --add/--remove` change one thing
+  at a time. The password never travels as an argument.
+- The configuration can also be done from the desktop: `ntfy-desktop config --gui` asks the same five
+  steps — server, credentials, topics, verification and summary — with one native dialog per step,
+  using kdialog on Plasma and zenity elsewhere. Cancelling a dialog writes nothing, a server that does
+  not answer can still be saved after the summary warns about it, and the password has a dialog of its
+  own: it never appears in the summary, in the log or in the argument list. Without either dialog tool
+  the wizard says so and continues in the terminal.
+
 ## [0.3.2] - 2026-11-20
 
 ### Added
@@ -164,5 +179,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 [0.2.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.2.0
 [0.3.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.0
 [0.3.2]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.2
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.2...HEAD
+[0.3.5]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.5
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.5...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1

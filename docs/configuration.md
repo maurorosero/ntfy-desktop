@@ -83,6 +83,62 @@ The loader is small on purpose and accepts exactly this:
 It is not a general TOML parser: there are no tables, arrays or multi-line strings. The file has five
 scalars and no reason to grow a parser.
 
+## From the terminal
+
+`ntfy-desktop config` reads, verifies and edits this file, so it never has to be written by hand:
+
+```sh
+ntfy-desktop config                       # the wizard: server, credentials, topics, summary
+ntfy-desktop config --gui                 # the same wizard, one desktop dialog per step
+ntfy-desktop config --show                # the effective configuration and the path of the file
+ntfy-desktop config --check               # verify the file, the server, the credentials, every topic
+ntfy-desktop config --set server=https://ntfy.sh
+ntfy-desktop config topic --add avisos
+ntfy-desktop config topic --remove avisos
+```
+
+The wizard asks one question at a time and writes only after showing the file it is about to write —
+with the password as `••••••••` — and asking for a confirmation. Cancelling at any question (an
+empty answer is kept as the default; `Ctrl-D` stops) leaves the file exactly as it was. A change made
+with `--set`, `--add` or `--remove` is validated with the same loader and written atomically; an
+invalid file is never the base of an edit, and a change that would leave the file invalid is
+refused.
+
+`--gui` runs the same interview with the dialogs of the desktop instead of the terminal: server,
+credentials, topics, the verification of every control and the summary, one dialog per step. On
+Plasma the dialogs are `kdialog`; `zenity` draws the same steps elsewhere. Without either of them,
+or without a session to draw them in, `--gui` says so in one line and asks in the terminal — it does
+not fail. A cancelled dialog writes nothing, and the password goes from the field to the program
+without ever passing through the argument list.
+
+The password is never an argument, where `ps` and the shell history would see it: the wizard asks for
+it without echoing it (`stty`), and `--password-stdin` reads it from the standard input for a script.
+`--set password=…` is refused on purpose.
+
+`--check` writes nothing and exits with a code that names what failed:
+
+| Code | What it means |
+|---|---|
+| 0 | everything verified |
+| 1 | nothing was written: the wizard was cancelled |
+| 2 | the file cannot be read, or the change would leave it invalid |
+| 3 | the server does not answer, or it is not an ntfy server |
+| 4 | the server rejected the credentials (401) |
+| 5 | the credentials have no permission for a topic (403) |
+
+The wizard and the commands that edit one key use the same numbers for the same failures, with one
+deliberate difference: a server that does not answer does not stop them. They save the file with a
+warning, because a configuration can be written before the server is reachable. A refusal — not ntfy,
+401, 403 — blocks and leaves the file untouched.
+
+`--check` makes one request to `/v1/health`, one to `/v1/account` and opens one stream per topic,
+cutting it on its first event: it reads no message and publishes nothing. A server without
+`/v1/account` — an older instance — is reported as unverified and does not turn the answer into a
+failure.
+
+`--show` prints the password as `••••••••`, never the value: the command exists to look at the file
+without opening it.
+
 ## Validation, and what it refuses
 
 | What | Why it is refused |
@@ -101,7 +157,34 @@ level=ERROR msg="the configuration is not usable" path=/home/mrosero/.config/ntf
   key=password reason="requires a password"
 ```
 
+## What it does not do, and why
+
+- **One server, many topics.** There are no profiles: a second server is a second config file, and the
+  program reads one. The product is a client of a subscription, not a manager of accounts.
+- **The password lives in the file**, with `0600` and nothing else. A keyring would add another
+  dependency and another way to fail before the first message arrives; it is a later step, not a
+  condition for this one.
+- **It does not administer ntfy.** Users, roles and the ACL are `ntfy user` and `ntfy access`, on the
+  server. The client can only report what the server answers: a 401 is the credentials, a 403 is the
+  permission for that topic.
+- **It does not verify that a topic "exists"**, because in ntfy a topic exists once something is
+  published: an empty one answers exactly like a used one. It verifies the permission to read, not the
+  existence.
+
 ## Where the code lives
 
-`internal/config` — loading, validation and the typed errors. Its tests are table-driven and cover
-each refusal above, plus the escapes and the comments.
+`internal/config` — loading, validation, the typed errors and the atomic write. Its tests are
+table-driven and cover each refusal above, plus the escapes and the comments.
+
+`internal/setup` — the operations that read the file, change one key or the list of topics and write
+the result, without a user interface or the network behind them.
+
+`cmd/ntfy-desktop/config.go` — the `config` subcommand: the wizard, `--show`, `--check` and the
+commands that change one key, with the exit codes above. Its questions go through a `Prompter`, so
+the wizard is tested with fixed answers instead of a terminal; `internal/ntfy` provides the three
+checks it runs.
+
+`internal/dialog` — the `Prompter` implementations: `KDialogPrompt` and `ZenityPrompt` run the tool
+as a child process, one dialog per step, and translate its exit codes (`0` yes, `1` no or cancel,
+`2` cancel; zenity needs `ZENITY_EXTRA` to tell a rejection from a cancel) into an answer, a
+cancellation or an error. They draw no widget of their own: no Qt and no GTK are linked.

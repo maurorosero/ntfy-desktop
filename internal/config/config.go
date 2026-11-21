@@ -138,11 +138,11 @@ func DefaultPath() (string, error) {
 // file keeps fs.ErrNotExist wrapped, so the caller can tell it apart and
 // explain where the file goes.
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	doc, err := LoadDocument(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", path, err)
+		return nil, err
 	}
-	cfg, err := parse(data)
+	cfg, err := doc.Check()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -177,19 +177,44 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Field, fmt.Sprintf(e.Msg, e.Args...))
 }
 
-// validate checks the values and normalises the server URL.
-func (c *Config) validate() error {
-	c.ServerURL = strings.TrimRight(c.ServerURL, "/")
-	if c.ServerURL == "" {
-		return &ValidationError{Field: keyServer, Msg: msgRequired}
+// CheckServer reports whether value is a usable server URL and returns it
+// normalised, with the trailing slash trimmed: the client builds the path
+// itself, so the two forms are the same server.
+//
+// It is the rule of the loader exposed on its own, so a front end that asks
+// for the URL one field at a time rejects the value at the step where it is
+// typed instead of at the end.
+func CheckServer(value string) (string, error) {
+	value = strings.TrimRight(value, "/")
+	if value == "" {
+		return "", &ValidationError{Field: keyServer, Msg: msgRequired}
 	}
-	u, err := url.Parse(c.ServerURL)
+	u, err := url.Parse(value)
 	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
-		return &ValidationError{Field: keyServer, Msg: msgURL}
+		return "", &ValidationError{Field: keyServer, Msg: msgURL}
 	}
 	if u.RawQuery != "" || u.Fragment != "" {
-		return &ValidationError{Field: keyServer, Msg: msgNoQuery}
+		return "", &ValidationError{Field: keyServer, Msg: msgNoQuery}
 	}
+	return value, nil
+}
+
+// CheckTopic reports whether name is usable as a topic: the same rule the
+// loader applies to every name of the list.
+func CheckTopic(name string) error {
+	if !topicPattern.MatchString(name) {
+		return &ValidationError{Field: keyTopic, Msg: msgTopic}
+	}
+	return nil
+}
+
+// validate checks the values and normalises the server URL.
+func (c *Config) validate() error {
+	server, err := CheckServer(c.ServerURL)
+	if err != nil {
+		return err
+	}
+	c.ServerURL = server
 
 	// Every topic is validated with the same pattern, and a list reports which
 	// name is wrong: with several of them, "the topic is invalid" says nothing.
@@ -197,8 +222,8 @@ func (c *Config) validate() error {
 	case 0:
 		return &ValidationError{Field: keyTopic, Msg: msgRequired}
 	case 1:
-		if !topicPattern.MatchString(c.Topics[0]) {
-			return &ValidationError{Field: keyTopic, Msg: msgTopic}
+		if err := CheckTopic(c.Topics[0]); err != nil {
+			return err
 		}
 	default:
 		for _, topic := range c.Topics {

@@ -25,6 +25,13 @@ devuelve la respuesta. También publica mensajes y guarda historial local.
 **`plan/alcance.md` es la fuente de verdad del alcance.** Si una tarea no está ahí, no la
 agregues por iniciativa propia: preguntá.
 
+**`plan/` es efímero; `docs/` es lo que existe.** `plan/` guarda lo que todavía no está construido:
+el alcance, las decisiones de diseño y los briefs de lo que falta. Cuando una funcionalidad se
+termina, su descripción **se muda a `docs/`** —lo que necesita quien usa el programa— y el plan que
+la describía se retira: dos documentos que cuentan lo mismo terminan contando cosas distintas. Una
+decisión que nació en un plan y sigue valiendo se conserva en `docs/decisions.md`. Si `plan/` y
+`docs/` se contradicen, manda `docs/` para lo que existe y `plan/` para lo que falta.
+
 ---
 
 ## 2. Ciclo de desarrollo — seis puertas

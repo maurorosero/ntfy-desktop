@@ -6,12 +6,65 @@ the session and exits; the rest is the daemon the service unit starts, the `publ
 
 ```sh
 ntfy-desktop                        # what it detected: user, locale, desktop, dialog tool
-ntfy-desktop --version              # version and the commit it was built from
+ntfy-desktop --version              # the version of this binary
 ntfy-desktop --daemon               # subscribe, notify, ask, until stopped
 ntfy-desktop daemon --log-level debug
 ntfy-desktop publish [topic]        # body from stdin
 ntfy-desktop history [--unread]
+ntfy-desktop config                 # wizard: server, credentials, topics
 ```
+
+## Configuring it
+
+The file and its keys are described in [configuration.md](configuration.md). It never has to be
+written by hand: `config` reads it, verifies it and edits one thing at a time.
+
+```sh
+ntfy-desktop config                       # the wizard, one question at a time
+ntfy-desktop config --gui                 # the same steps, one desktop dialog each
+ntfy-desktop config --show                # the effective configuration and the path of the file
+ntfy-desktop config --check               # verify file, server, credentials and every topic
+ntfy-desktop config --set server=https://ntfy.sh
+ntfy-desktop config topic --add avisos
+ntfy-desktop config topic --remove avisos
+```
+
+The wizard writes only after showing the file it is about to write — password as `••••••••` — and
+asking for confirmation. Answering nothing keeps the current value; `Ctrl-D` stops; cancelling
+writes nothing. `--set`, `--add` and `--remove` validate the result with the same loader, write it
+atomically and keep a `.bak` of the previous version.
+
+`--gui` runs the same interview with the desktop's dialogs: `kdialog` on Plasma, `zenity` elsewhere.
+With neither of them, or with no session to draw them in, it says so in one line and asks in the
+terminal — it does not fail. On Plasma the buttons of the text dialogs carry the wording of the
+toolkit in the language of the session, not the labels of the catalog: `kdialog` ignores the labels
+the program passes to `--inputbox`, `--password` and `--checklist`, and has no `--button` option to
+name them. The text inside each dialog, and every button of `zenity`, come from the catalog.
+
+The password is never an argument, where `ps` and the shell history would see it: the wizard asks
+for it without echoing, and `--password-stdin` reads it from the standard input for a script.
+`--set password=…` is refused on purpose.
+
+`--check` writes nothing and exits with a code that names what failed:
+
+| Code | Meaning |
+|---|---|
+| 0 | everything verified |
+| 1 | nothing was written: the wizard was cancelled |
+| 2 | the file cannot be read, or the change would leave it invalid |
+| 3 | the server does not answer, or it is not an ntfy server |
+| 4 | the server rejected the credentials (401) |
+| 5 | the credentials have no permission for a topic (403) |
+
+The wizard and the commands that edit one key use the same numbers, with one deliberate difference:
+a server that does not answer does not stop them — they save with a warning, because a configuration
+can be written before the server is reachable. A refusal — not ntfy, 401, 403 — blocks and leaves the
+file untouched.
+
+What `--check` cannot tell you: whether a topic "exists" (in ntfy a topic exists once something is
+published, and an empty one answers the same), whether the user may publish (that would leave a
+message behind) or what the server's ACL allows beyond the 401 and the 403 it can see.
+
 
 ## The daemon
 

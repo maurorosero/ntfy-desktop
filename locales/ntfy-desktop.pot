@@ -253,3 +253,428 @@ msgstr ""
 
 #: cmd/ntfy-desktop/history.go
 msgid "(no title)"
+msgstr ""
+
+#: internal/config/document.go
+msgid "cannot remove the only topic"
+msgstr ""
+
+#: internal/config/document.go
+msgid "%q is already in the topic list"
+msgstr ""
+
+#: internal/config/document.go
+msgid "%q is not in the topic list"
+msgstr ""
+
+#: internal/config/document.go
+msgid "expected a quoted value on this line"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "       ntfy-desktop config topic --add name | --remove name"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "show the effective configuration and the path of the file"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "verify the file, the server, the credentials and every topic, and write nothing"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "change one key: server, topic, user or log-level"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "read the password from the standard input instead of asking for it without echo"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "--set expects key=value"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the password is never given as an argument: use --password-stdin"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "--set does not know the key %q: use server, topic, user or log-level"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "--password-stdin goes with --set, or alone to change only the password"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "usage: ntfy-desktop config topic --add name | --remove name"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "add a topic to the list"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "remove a topic from the list"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "config topic takes exactly one of --add or --remove"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "--add needs a topic name"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "--remove needs a topic name"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "there is no configuration at %s: run ntfy-desktop config to create one"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the configuration at %s cannot be read: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "path"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "server"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "topic"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "password"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "credentials"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "none: the subscription is anonymous"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "info (default)"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "log level"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "%s answers as an ntfy server"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the server asks for no credentials: it answered as %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "%s, role %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the stream of %s opened"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the configuration file cannot be read or is not valid"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the server does not answer, or it is not an ntfy server"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the server rejected the credentials"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the credentials have no permission for a topic"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the change was refused: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "reading the password from the standard input failed: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the configuration at %s cannot be edited: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the change would leave the configuration invalid: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "warning: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the configuration could not be written: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "wrote %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "the previous version is in %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "line %d: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "line %d: %s %q"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "line %d: %s: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "nothing was written"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the configuration would not be valid: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "warning: some checks could not be verified; the configuration can still be saved"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "this is what will be written to %s:"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "write the configuration?"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "server URL (http or https, with no query and no fragment):"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "that URL cannot be used: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the server URL was left invalid"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "%s does not look like an ntfy server: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "%s is not an ntfy server"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "does the server use a user name and password?"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "user name:"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "password (it is not shown):"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the user name and the password are both required"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the credentials were left incomplete"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the server refused the credentials: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the credentials were refused"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "topics, separated by commas:"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "those topics cannot be used: %s"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "the topics were left invalid"
+msgstr ""
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "%s cannot be read: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "warning: the terminal echo could not be turned off, so the password will be visible: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "warning: the terminal echo could not be turned back on: %v"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "y/n"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "Y/n"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "answer yes or no"
+msgstr ""
+
+#: cmd/ntfy-desktop/prompt.go
+msgid "reading the answer"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "ok"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "unverified"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "failed"
+msgstr ""
+
+#: cmd/ntfy-desktop/config.go
+msgid "read"
+msgstr ""
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop"
+msgstr "Configure ntfy-desktop"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %d of %d · %s"
+msgstr "Configure ntfy-desktop — %d of %d · %s"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %s"
+msgstr "Configure ntfy-desktop — %s"
+
+#: internal/dialog/prompt.go
+msgid "topic %s"
+msgstr "topic %s"
+
+#: internal/dialog/prompt.go
+msgid "unknown"
+msgstr "unknown"
+
+#: internal/dialog/prompt.go
+msgid "a check that could not be verified does not block: the configuration can be saved, and the summary warns about it"
+msgstr "a check that could not be verified does not block: the configuration can be saved, and the summary warns about it"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Continue"
+msgstr "Continue"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Cancel"
+msgstr "Cancel"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Write"
+msgstr "Write"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Yes"
+msgstr "Yes"
+
+#: internal/dialog/zenity_prompt.go
+msgid "No"
+msgstr "No"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Topic"
+msgstr "Topic"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "topics to subscribe to"
+msgstr "topics to subscribe to"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "add a topic (leave it empty to finish)"
+msgstr "add a topic (leave it empty to finish)"
+
+#: cmd/ntfy-desktop/config.go
+msgid "ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"
+msgstr "ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"
+
+#: cmd/ntfy-desktop/config.go
+msgid "config takes one of --gui, --show, --check or --set"
+msgstr "config takes one of --gui, --show, --check or --set"
+
+#: cmd/ntfy-desktop/config.go
+msgid "usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"
+msgstr "usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"
+
+#: cmd/ntfy-desktop/config.go
+msgid "no kdialog or zenity in the PATH: the interview continues in text mode"
+msgstr "no kdialog or zenity in the PATH: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "there is no desktop session: the interview continues in text mode"
+msgstr "there is no desktop session: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "%s is not a dialog tool this program knows: the interview continues in text mode"
+msgstr "%s is not a dialog tool this program knows: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "the list needs at least one topic"
+msgstr "the list needs at least one topic"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Server"
+msgstr "Server"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Credentials"
+msgstr "Credentials"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Topics"
+msgstr "Topics"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Verification"
+msgstr "Verification"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Summary"
+msgstr "Summary"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"
+msgstr "it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"
