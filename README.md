@@ -120,12 +120,14 @@ Details: [docs/usage.md](docs/usage.md).
 
 ```sh
 ntfy-desktop                        # prints the detected environment
-ntfy-desktop --version              # version and commit
+ntfy-desktop --version              # the version of this binary
 ntfy-desktop --daemon               # subscribes until it is stopped
 ntfy-desktop publish [topic]        # body from stdin
 ntfy-desktop history [--unread]
 ntfy-desktop config                 # the wizard: server, credentials, topics
 ntfy-desktop config --gui           # the same wizard with the desktop's own dialogs
+ntfy-desktop config --show          # the effective configuration and the path of the file
+ntfy-desktop config --check         # verify file, server, credentials and every topic
 ```
 
 With no arguments it prints what it detects about the session and exits:
@@ -265,7 +267,8 @@ tools/                Go toolchain bootstrap, repo metadata and git hooks
 6. History: store and `history` command. — done
 7. History wiring: the daemon records what arrives and marks what is answered. — done
 8. Portability: verify the GNOME adapter on a real session. — open
-9. Packaging: `.deb` and a release pipeline with signed binaries. — open
+9. Packaging: `.deb` and a release pipeline with signed binaries. — done
+10. Configuration: written, checked and changed from the program, in the terminal and in the desktop. — done
 
 ## Contributing
 

@@ -85,32 +85,14 @@ silencio sin credenciales a un topic protegido se vería como un topic vacío, n
 
 ## 4.3 Configuración
 
-Un solo archivo, escrito por el usuario. El paquete nunca lo crea.
+Un solo archivo, una sola suscripción: un servidor y varios topics, sin perfiles. Un segundo servidor
+es un segundo archivo, que el programa no lee. El paquete nunca crea el archivo, y el usuario tampoco
+tiene que escribirlo a mano: `ntfy-desktop config` lo crea, lo edita y lo verifica, en el terminal y
+en el escritorio (`--gui`).
 
-```
-os.UserConfigDir()/ntfy-desktop/config.toml     # normalmente ~/.config/ntfy-desktop/config.toml
-```
-
-`os.UserConfigDir()` respeta `XDG_CONFIG_HOME`, así que la ruta no se escribe a mano. El archivo
-es TOML, y de TOML se acepta el subconjunto que hace falta: comentarios, líneas en blanco y una
-asignación `clave = "valor"` por línea, con los escapes `\"`, `\\`, `\n`, `\t` y `\r`. Lo que no
-entra en ese subconjunto se rechaza con el número de línea: una clave mal escrita no se ignora en
-silencio.
-
-```toml
-server    = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
-topic     = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-] cada uno, separados por comas
-user      = "andrea"                     # opcional, junto con password
-password  = "…"                          # opcional, junto con user
-log-level = "info"                       # opcional: debug, info, warn o error
-```
-
-Sin `user` ni `password` el cliente se suscribe sin credenciales. Las secciones `[tabla]` todavía
-no se aceptan: hoy la configuración es de una sola suscripción y las claves van sueltas.
-
-`topic` acepta varios nombres separados por comas: es una sola suscripción a la lista, con una
-conexión al stream y cada mensaje con su `topic`. Un segmento vacío o inválido es error con el
-segmento nombrado, y `publish` exige destino explícito cuando hay más de uno configurado.
+La referencia de lo que existe —claves, formato, validaciones, códigos de salida y lo que no se puede
+verificar— es `docs/configuration.md`. La contraseña se guarda en el archivo con `0600`; el keyring del
+escritorio queda como paso posterior.
 
 ## 5. Funcionalidades de un cliente ntfy
 

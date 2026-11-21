@@ -46,8 +46,7 @@ The push of the tag is what starts `.github/workflows/release.yml`.
    - `checksums.txt`
 
    The version inside each binary comes from the tag (`{{ .Version }}` in the `ldflags`), so
-   `ntfy-desktop --version` on a released binary prints that version and the commit it was built
-   from.
+   `ntfy-desktop --version` on a released binary prints that version.
 
 ## What a package installs
 
@@ -112,7 +111,7 @@ dpkg-deb -I /tmp/rel/ntfy-desktop_0.2.0_linux_amd64.deb       # metadata
 dpkg-deb -c /tmp/rel/ntfy-desktop_0.2.0_linux_amd64.deb       # what it installs
 # or
 sudo dpkg -i /tmp/rel/ntfy-desktop_0.2.0_linux_amd64.deb
-ntfy-desktop --version                   # 0.2.0 <commit>
+ntfy-desktop --version                   # 0.2.0
 ```
 
 ## If the workflow fails
