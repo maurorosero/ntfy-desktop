@@ -104,6 +104,13 @@ jobs:
         run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/release-notes.md"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: el repositorio de paquetes
+        # Un release creado con GITHUB_TOKEN no dispara el evento `release`, así
+        # que el repositorio se pide por nombre. Sin esto, los .deb quedan en la
+        # release pero `apt` no los ve.
+        run: gh workflow run repository.yml --ref main -f tag="${GITHUB_REF_NAME}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: resumen
         run: |
           {
