@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `topic = "casa, pruebas"`. One connection delivers them all, each message keeps its own topic, and
   `publish` asks which one to use when the configuration names more than one.
 
+### Fixed
+
+- The release did not reach the apt repository: a release published with the workflow token does not
+  fire the `release` event, so the repository job never ran. The release now asks for it by name, and
+  `apt` sees the new version without a manual step.
+
 ## [0.2.0] - 2026-11-20
 
 ### Added
