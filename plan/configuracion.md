@@ -6,9 +6,10 @@
 verificar la configuración desde el propio programa, en texto y en el escritorio. Está escrito para
 trocearse después en issues detallados.
 
-Estado: el **frente de texto está implementado** (issue #41): `ntfy-desktop config`, `--show`,
-`--check` con los códigos 0/2/3/4/5, `--set`, `config topic --add/--remove` y la contraseña por
-entrada estándar. El frente gráfico (`--gui`, issue #42) sigue pendiente.
+Estado: los **dos frentes están implementados**. El de texto (issue #41): `ntfy-desktop config`,
+`--show`, `--check` con los códigos 0/2/3/4/5, `--set`, `config topic --add/--remove` y la contraseña
+por entrada estándar. El gráfico (issue #42): `--gui`, un diálogo por paso con `kdialog`, respaldo
+`zenity` y caída al modo texto cuando no hay ninguno de los dos.
 
 ---
 
@@ -203,7 +204,7 @@ Sin fechas. Cada uno se cierra cuando se puede probar.
 2. **Verificación**: `Probe` contra un ntfy real; los cuatro estados (sano, credenciales, sin permiso,
    no verificable) con sus códigos de salida.
 3. **Texto**: `config`, `--show`, `--check`, `topic --add/--remove`. **Hecho** (#41).
-4. **Gráfico**: `config --gui` con `kdialog`, y el respaldo `zenity`/texto.
+4. **Gráfico**: `config --gui` con `kdialog`, y el respaldo `zenity`/texto. **Hecho** (#42).
 5. **Documentación**: `docs/configuration.md` y el README con el flujo nuevo.
 
 ## 12. Mapa a issues (borrador)

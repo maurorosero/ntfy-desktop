@@ -125,6 +125,7 @@ ntfy-desktop --daemon               # subscribes until it is stopped
 ntfy-desktop publish [topic]        # body from stdin
 ntfy-desktop history [--unread]
 ntfy-desktop config                 # the wizard: server, credentials, topics
+ntfy-desktop config --gui           # the same wizard with the desktop's own dialogs
 ```
 
 With no arguments it prints what it detects about the session and exits:
@@ -195,7 +196,9 @@ The file can be written and checked from the terminal instead of by hand: `ntfy-
 asks for the server, the credentials and the topics and writes only what you confirm, `--check`
 verifies file, server, credentials and every topic and exits with a code that says what failed,
 and `--set` or `config topic --add/--remove` change one thing at a time. The password never travels
-as an argument.
+as an argument. `ntfy-desktop config --gui` runs the same interview with the dialogs of the desktop
+(`kdialog` on Plasma, `zenity` as a fallback), one step per dialog; without either of them it says so
+and asks in the terminal.
 
 Full reference, with what is refused and why: [docs/configuration.md](docs/configuration.md).
 

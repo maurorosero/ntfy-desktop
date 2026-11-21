@@ -136,6 +136,7 @@ func TestParseConfig(t *testing.T) {
 		{name: "no flags is the wizard", args: []string{"config"}, want: configOptions{}},
 		{name: "--show", args: []string{"config", "--show"}, want: configOptions{show: true}},
 		{name: "--check", args: []string{"config", "--check"}, want: configOptions{check: true}},
+		{name: "--gui", args: []string{"config", "--gui"}, want: configOptions{gui: true}},
 		{
 			name: "a whole value after the equals sign",
 			args: []string{"config", "--set", "server=https://ntfy.sh"},
@@ -163,6 +164,10 @@ func TestParseConfig(t *testing.T) {
 
 		{name: "two actions", args: []string{"config", "--show", "--check"}, wantFail: true},
 		{name: "an action and a set", args: []string{"config", "--check", "--set", "user=x"}, wantFail: true},
+		{name: "--gui and --show", args: []string{"config", "--gui", "--show"}, wantFail: true},
+		{name: "--gui and --check", args: []string{"config", "--gui", "--check"}, wantFail: true},
+		{name: "--gui and a set", args: []string{"config", "--gui", "--set", "user=x"}, wantFail: true},
+		{name: "--gui with --password-stdin", args: []string{"config", "--gui", "--password-stdin"}, wantFail: true},
 		{name: "the password as an argument", args: []string{"config", "--set", "password=x"}, wantFail: true},
 		{name: "an empty password as an argument", args: []string{"config", "--set", "password="}, wantFail: true},
 		{name: "a set without an equals sign", args: []string{"config", "--set", "server"}, wantFail: true},

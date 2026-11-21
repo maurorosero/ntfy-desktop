@@ -11,29 +11,25 @@ import (
 	"strings"
 
 	"github.com/maurorosero/ntfy-desktop/internal/config"
+	"github.com/maurorosero/ntfy-desktop/internal/dialog"
 	"github.com/maurorosero/ntfy-desktop/internal/i18n"
 	"github.com/maurorosero/ntfy-desktop/internal/ntfy"
 	"github.com/maurorosero/ntfy-desktop/internal/setup"
 )
 
-// Prompter asks the person one question at a time. The wizard consumes it, so
-// the text front end, a dialog front end and a test with fixed answers all
-// drive the same steps: nothing below reads the terminal itself.
-type Prompter interface {
-	// Line asks for a line of text, offering current as the value Enter keeps.
-	Line(question, current string) (string, error)
-	// Secret asks for a value that is not echoed.
-	Secret(question string) (string, error)
-	// YesNo asks a closed question, where def is what Enter answers.
-	YesNo(question string, def bool) (bool, error)
-	// Note shows a line that needs no answer.
-	Note(text string)
-}
+// Prompter is how the wizard talks to the person. The contract lives next to
+// the adapters that implement it (internal/dialog), the way Decider does, so
+// the text front end and the desktop ones drive the same steps.
+type Prompter = dialog.Prompter
 
 // ErrCancelled reports that the person stopped the wizard. Nothing is written.
-var ErrCancelled = errors.New("cancelled by the person")
+var ErrCancelled = dialog.ErrPromptCancelled
 
-// Prober is the part of the verification the wizard shows while it asks: the
+// steps is how many screens the interview has, for the "1 of 5" of a dialog
+// title. Asking again inside a step does not add one.
+const steps = 5
+
+// Prober is the part of the verification the wizard runs while it asks: the
 // three checks, one at a time, each with its own short timeout.
 type Prober interface {
 	Health(ctx context.Context) ntfy.Result
@@ -62,15 +58,22 @@ func runWizard(ctx context.Context, path string, pr Prompter, verify Verifier, t
 	w := &wizard{tr: tr, pr: pr, verify: verify}
 
 	if err := w.interview(ctx, path); err != nil {
-		if msg := w.reason(err); msg != "" {
-			w.pr.Note(msg)
+		if errors.Is(err, ErrCancelled) {
+			// A cancellation is an answer of its own: it needs no window that
+			// says so, and a desktop front end shows nothing.
+			pr.Note(tr.T("nothing was written"))
+			return exitNothing
 		}
-		w.pr.Note(tr.T("nothing was written"))
+		code := exitNothing
 		var stop *blocked
 		if errors.As(err, &stop) {
-			return stop.code
+			code = stop.code
 		}
-		return exitNothing
+		if warnErr := pr.Warn(ctx, err.Error()); warnErr != nil {
+			return exitNothing
+		}
+		pr.Note(tr.T("nothing was written"))
+		return code
 	}
 	return exitOK
 }
@@ -82,10 +85,14 @@ type wizard struct {
 	tr     *i18n.Translator
 	pr     Prompter
 	verify Verifier
+
+	// report collects what each check said, so the verification screen shows
+	// the conclusions the steps reached instead of asking the server again.
+	report ntfy.Report
 }
 
 // interview runs the steps in the order of the plan: server, credentials,
-// topics, the read check of every topic, and the summary before the file is
+// topics, the check of every control, and the summary before the file is
 // touched.
 func (w *wizard) interview(ctx context.Context, path string) error {
 	draft, base, err := w.open(path)
@@ -93,6 +100,7 @@ func (w *wizard) interview(ctx context.Context, path string) error {
 		return err
 	}
 
+	w.pr.Step(1, steps, w.tr.T("Server"))
 	server, err := w.askServer(ctx, base.ServerURL)
 	if err != nil {
 		return err
@@ -101,6 +109,7 @@ func (w *wizard) interview(ctx context.Context, path string) error {
 		return w.editFailed(err)
 	}
 
+	w.pr.Step(2, steps, w.tr.T("Credentials"))
 	user, password, err := w.askCredentials(ctx, server, base)
 	if err != nil {
 		return err
@@ -109,6 +118,7 @@ func (w *wizard) interview(ctx context.Context, path string) error {
 		return err
 	}
 
+	w.pr.Step(3, steps, w.tr.T("Topics"))
 	topics, err := w.askTopics(ctx, base.Topics)
 	if err != nil {
 		return err
@@ -121,20 +131,15 @@ func (w *wizard) interview(ctx context.Context, path string) error {
 	if err != nil {
 		return &blocked{code: exitFile, msg: w.tr.T("the configuration would not be valid: %s", describe(w.tr, err))}
 	}
-	unverified, err := w.checkReads(ctx, *cfg)
+
+	w.pr.Step(4, steps, w.tr.T("Verification"))
+	unverified, err := w.checkControls(ctx, *cfg)
 	if err != nil {
 		return err
 	}
 
-	if unverified {
-		w.pr.Note(w.tr.T("warning: some checks could not be verified; the configuration can still be saved"))
-	}
-	w.pr.Note(w.tr.T("this is what will be written to %s:", path))
-	w.pr.Note("")
-	w.pr.Note(string(draft.Masked(maskedPassword)))
-	w.pr.Note("")
-
-	write, err := w.pr.YesNo(w.tr.T("write the configuration?"), true)
+	w.pr.Step(5, steps, w.tr.T("Summary"))
+	write, err := w.pr.Confirm(ctx, w.tr.T("write the configuration?"), w.summary(path, draft, unverified))
 	if err != nil {
 		return err
 	}
@@ -149,11 +154,7 @@ func (w *wizard) interview(ctx context.Context, path string) error {
 	if err != nil {
 		return &blocked{code: exitNothing, msg: w.tr.T("the configuration could not be written: %s", describe(w.tr, err))}
 	}
-	w.pr.Note(w.tr.T("wrote %s", result.Path))
-	if result.Backup != "" {
-		w.pr.Note(w.tr.T("the previous version is in %s", result.Backup))
-	}
-	return nil
+	return w.pr.Done(ctx, w.done(result))
 }
 
 // open loads the file the wizard edits or starts an empty draft. A file the
@@ -184,19 +185,21 @@ func (w *wizard) open(path string) (*setup.Draft, config.Config, error) {
 
 // askServer asks for the URL and checks it on the spot: the shape with the
 // loader and, when it answers, that the server is ntfy. A server that does not
-// answer is a warning, not a stop: the file can be saved without it.
+// answer is not asked again: the check stays unverified and the report says so.
 func (w *wizard) askServer(ctx context.Context, base string) (string, error) {
 	for attempt := 1; ; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return "", ErrCancelled
 		}
-		answer, err := w.pr.Line(w.tr.T("server URL (http or https, with no query and no fragment):"), base)
+		answer, err := w.pr.Line(ctx, w.tr.T("server URL (http or https, with no query and no fragment):"), base)
 		if err != nil {
 			return "", err
 		}
 		value, err := config.CheckServer(answer)
 		if err != nil {
-			w.pr.Note(w.tr.T("that URL cannot be used: %s", describe(w.tr, err)))
+			if warnErr := w.pr.Warn(ctx, w.tr.T("that URL cannot be used: %s", describe(w.tr, err))); warnErr != nil {
+				return "", warnErr
+			}
 			if attempt == attempts {
 				return "", &blocked{code: exitFile, msg: w.tr.T("the server URL was left invalid")}
 			}
@@ -204,29 +207,37 @@ func (w *wizard) askServer(ctx context.Context, base string) (string, error) {
 		}
 
 		res := w.verify(config.Config{ServerURL: value}).Health(ctx)
-		switch res.State {
-		case ntfy.StateFailed:
-			w.pr.Note(w.tr.T("%s does not look like an ntfy server: %v", value, res.Err))
+		w.report.Health = res
+		if res.State == ntfy.StateFailed {
+			if warnErr := w.pr.Warn(ctx, w.tr.T("%s does not look like an ntfy server: %v", value, res.Err)); warnErr != nil {
+				return "", warnErr
+			}
 			if attempt == attempts {
 				return "", &blocked{code: exitServer, msg: w.tr.T("%s is not an ntfy server", value)}
 			}
 			continue
-		case ntfy.StateUnverifiable:
-			w.pr.Note(w.tr.T("warning: %s does not answer now: %v", value, res.Err))
 		}
 		return value, nil
 	}
 }
 
-// askCredentials asks whether the server uses a pair, and verifies it against
+// askCredentials asks whether the server uses a pair and verifies it against
 // /v1/account. A refused pair is asked again —the mistake is one keystroke
-// away— until the attempts run out, and then it stops the wizard.
+// away— until the attempts run out, and then it stops the wizard. An anonymous
+// answer is verified too: a server that answers 401 to it asks for credentials
+// the configuration does not have.
 func (w *wizard) askCredentials(ctx context.Context, server string, base config.Config) (string, string, error) {
-	use, err := w.pr.YesNo(w.tr.T("does the server use a user name and password?"), base.AuthMode() == config.AuthBasic)
+	use, err := w.pr.YesNo(ctx, w.tr.T("does the server use a user name and password?"), base.AuthMode() == config.AuthBasic)
 	if err != nil {
 		return "", "", err
 	}
 	if !use {
+		res := w.verify(config.Config{ServerURL: server}).Account(ctx)
+		w.report.Account = res
+		if res.State == ntfy.StateFailed {
+			return "", "", &blocked{code: resultExit(res),
+				msg: w.tr.T("the server asks for credentials and the configuration has none")}
+		}
 		return "", "", nil
 	}
 
@@ -235,17 +246,19 @@ func (w *wizard) askCredentials(ctx context.Context, server string, base config.
 		if err := ctx.Err(); err != nil {
 			return "", "", ErrCancelled
 		}
-		user, err := w.pr.Line(w.tr.T("user name:"), last)
+		user, err := w.pr.Line(ctx, w.tr.T("user name:"), last)
 		if err != nil {
 			return "", "", err
 		}
 		user = strings.TrimSpace(user)
-		password, err := w.pr.Secret(w.tr.T("password (it is not shown):"))
+		password, err := w.pr.Secret(ctx, w.tr.T("password (it is not shown):"))
 		if err != nil {
 			return "", "", err
 		}
 		if user == "" || password == "" {
-			w.pr.Note(w.tr.T("the user name and the password are both required"))
+			if warnErr := w.pr.Warn(ctx, w.tr.T("the user name and the password are both required")); warnErr != nil {
+				return "", "", warnErr
+			}
 			if attempt == attempts {
 				return "", "", &blocked{code: exitFile, msg: w.tr.T("the credentials were left incomplete")}
 			}
@@ -254,24 +267,18 @@ func (w *wizard) askCredentials(ctx context.Context, server string, base config.
 		}
 
 		res := w.verify(config.Config{ServerURL: server, User: user, Password: password}).Account(ctx)
+		w.report.Account = res
 		switch res.State {
-		case ntfy.StateOK:
-			if res.Account.Role == ntfy.RoleAnonymous {
-				w.pr.Note(w.tr.T("the server asks for no credentials: it answered as %s", res.Account.Role))
-			} else {
-				w.pr.Note(w.tr.T("credentials accepted: %s, role %s", res.Account.Username, res.Account.Role))
-			}
+		case ntfy.StateOK, ntfy.StateUnverifiable:
 			return user, password, nil
-		case ntfy.StateUnverifiable:
-			w.pr.Note(w.tr.T("warning: the credentials could not be verified: %v", res.Err))
-			return user, password, nil
-		default:
-			w.pr.Note(w.tr.T("the server refused the credentials: %v", res.Err))
-			if attempt == attempts || !errors.Is(res.Err, ntfy.ErrCredentials) {
-				return "", "", &blocked{code: resultExit(res), msg: w.tr.T("the credentials were refused")}
-			}
-			last = user
 		}
+		if warnErr := w.pr.Warn(ctx, w.tr.T("the server refused the credentials: %v", res.Err)); warnErr != nil {
+			return "", "", warnErr
+		}
+		if attempt == attempts || !errors.Is(res.Err, ntfy.ErrCredentials) {
+			return "", "", &blocked{code: resultExit(res), msg: w.tr.T("the server refused the credentials: %v", res.Err)}
+		}
+		last = user
 	}
 }
 
@@ -291,50 +298,80 @@ func (w *wizard) setPair(draft *setup.Draft, base config.Config, user, password 
 	return nil
 }
 
-// askTopics asks for the list, validates every name, and refuses an empty or a
-// repeated one before anything else happens.
+// askTopics asks for the list and validates it. A front end may refuse a name
+// where it is typed, but the list is checked here as well: the rule is the
+// file's, and a front end is not the place where it is decided.
 func (w *wizard) askTopics(ctx context.Context, base []string) ([]string, error) {
-	current := strings.Join(base, ", ")
+	current := base
 	for attempt := 1; ; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, ErrCancelled
 		}
-		answer, err := w.pr.Line(w.tr.T("topics, separated by commas:"), current)
+		answer, err := w.pr.Topics(ctx, current)
 		if err != nil {
 			return nil, err
 		}
-		list, err := parseTopics(answer, w.tr)
+		list, err := validateTopics(answer, w.tr)
 		if err != nil {
-			w.pr.Note(w.tr.T("those topics cannot be used: %s", describe(w.tr, err)))
+			if warnErr := w.pr.Warn(ctx, w.tr.T("those topics cannot be used: %s", describe(w.tr, err))); warnErr != nil {
+				return nil, warnErr
+			}
 			if attempt == attempts {
 				return nil, &blocked{code: exitFile, msg: w.tr.T("the topics were left invalid")}
 			}
+			current = trimAll(answer)
 			continue
 		}
 		return list, nil
 	}
 }
 
-// checkReads opens the stream of every topic and cuts it on the first event.
-// A refusal stops the wizard; a check that could not be made is a warning that
-// travels to the summary.
-func (w *wizard) checkReads(ctx context.Context, cfg config.Config) (bool, error) {
+// checkControls shows the verification of the candidate, one line per control,
+// and stops when one of them said no. A check that reached no conclusion does
+// not stop anything: it travels to the summary as a warning.
+func (w *wizard) checkControls(ctx context.Context, cfg config.Config) (bool, error) {
 	prober := w.verify(cfg)
-	unverified := false
+	w.report.Read = make([]ntfy.Result, 0, len(cfg.Topics))
 	for _, topic := range cfg.Topics {
-		res := prober.Read(ctx, topic)
-		switch res.State {
-		case ntfy.StateOK:
-			w.pr.Note(w.tr.T("read %s: ok", topic))
-		case ntfy.StateUnverifiable:
-			w.pr.Note(w.tr.T("warning: %s could not be read now: %v", topic, res.Err))
-			unverified = true
-		default:
+		w.report.Read = append(w.report.Read, prober.Read(ctx, topic))
+	}
+
+	if err := w.pr.Report(ctx, w.report, cfg.ServerURL); err != nil {
+		return false, err
+	}
+	for _, res := range w.report.Read {
+		if res.State == ntfy.StateFailed {
 			return false, &blocked{code: resultExit(res),
-				msg: w.tr.T("%s cannot be read: %v", topic, res.Err)}
+				msg: w.tr.T("%s cannot be read: %v", res.Topic, res.Err)}
 		}
 	}
-	return unverified, nil
+	return w.report.State() == ntfy.StateUnverifiable, nil
+}
+
+// summary is what the last step shows: the file as it will be written, with
+// the password masked, and the warning when a check could not be verified. It
+// never carries the secret, not even its length.
+func (w *wizard) summary(path string, draft *setup.Draft, unverified bool) string {
+	var b strings.Builder
+	if unverified {
+		b.WriteString(w.tr.T("warning: some checks could not be verified; the configuration can still be saved"))
+		b.WriteString("\n\n")
+	}
+	b.WriteString(w.tr.T("this is what will be written to %s:", path))
+	b.WriteString("\n\n")
+	b.WriteString(strings.TrimRight(string(draft.Masked(maskedPassword)), "\n"))
+	b.WriteString("\n\n")
+	b.WriteString(w.tr.T("it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"))
+	return b.String()
+}
+
+// done is the closing message: where the file is and where the old one went.
+func (w *wizard) done(result setup.Result) string {
+	lines := []string{w.tr.T("wrote %s", result.Path)}
+	if result.Backup != "" {
+		lines = append(lines, w.tr.T("the previous version is in %s", result.Backup))
+	}
+	return strings.Join(lines, "\n")
 }
 
 // editFailed reports an edit the engine refused, which a wizard step never
@@ -343,11 +380,30 @@ func (w *wizard) editFailed(err error) error {
 	return &blocked{code: exitFile, msg: w.tr.T("the change was refused: %s", describe(w.tr, err))}
 }
 
-// reason is the line that explains why the wizard stopped, empty when the
-// person cancelled: there is nothing to explain about that.
-func (w *wizard) reason(err error) string {
-	if errors.Is(err, ErrCancelled) {
-		return ""
+// describe turns a configuration error into one line: the parts that come from
+// the catalogues are translated, and the rest stays as the package wrote it.
+func describe(tr *i18n.Translator, err error) string {
+	var line *config.LineError
+	if errors.As(err, &line) {
+		return tr.T("line %d: %s", line.Line, describe(tr, line.Err))
 	}
-	return fmt.Sprint(err)
+	var invalid *config.ValidationError
+	if errors.As(err, &invalid) {
+		return fmt.Sprintf("%s: %s", invalid.Field, tr.T(invalid.Msg, invalid.Args...))
+	}
+	var syntax *config.SyntaxError
+	if errors.As(err, &syntax) {
+		if syntax.Key == "" {
+			return tr.T("line %d: %s", syntax.Line, tr.T(syntax.Msg))
+		}
+		return tr.T("line %d: %s %q", syntax.Line, tr.T(syntax.Msg), syntax.Key)
+	}
+	var edit *config.EditError
+	if errors.As(err, &edit) {
+		if edit.Line == 0 {
+			return fmt.Sprintf("%s: %s", edit.Key, tr.T(edit.Msg, edit.Args...))
+		}
+		return tr.T("line %d: %s: %s", edit.Line, edit.Key, tr.T(edit.Msg, edit.Args...))
+	}
+	return err.Error()
 }
