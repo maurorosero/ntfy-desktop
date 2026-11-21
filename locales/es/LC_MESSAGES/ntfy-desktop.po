@@ -272,10 +272,6 @@ msgid "expected a quoted value on this line"
 msgstr "falta el valor entre comillas en esta línea"
 
 #: cmd/ntfy-desktop/config.go
-msgid "usage: ntfy-desktop config [--show | --check | --set key=value] [--password-stdin]"
-msgstr "uso: ntfy-desktop config [--show | --check | --set clave=valor] [--password-stdin]"
-
-#: cmd/ntfy-desktop/config.go
 msgid "       ntfy-desktop config topic --add name | --remove name"
 msgstr "       ntfy-desktop config topic --add nombre | --remove nombre"
 
@@ -294,10 +290,6 @@ msgstr "cambia una clave: server, topic, user o log-level"
 #: cmd/ntfy-desktop/config.go
 msgid "read the password from the standard input instead of asking for it without echo"
 msgstr "lee la contraseña de la entrada estándar en vez de preguntarla sin eco"
-
-#: cmd/ntfy-desktop/config.go
-msgid "config takes one of --show, --check or --set"
-msgstr "config acepta una sola de --show, --check o --set"
 
 #: cmd/ntfy-desktop/config.go
 msgid "--set expects key=value"
@@ -496,10 +488,6 @@ msgid "%s is not an ntfy server"
 msgstr "%s no es un servidor ntfy"
 
 #: cmd/ntfy-desktop/wizard.go
-msgid "warning: %s does not answer now: %v"
-msgstr "atención: %s no responde ahora: %v"
-
-#: cmd/ntfy-desktop/wizard.go
 msgid "does the server use a user name and password?"
 msgstr "¿el servidor usa usuario y contraseña?"
 
@@ -520,14 +508,6 @@ msgid "the credentials were left incomplete"
 msgstr "las credenciales quedaron incompletas"
 
 #: cmd/ntfy-desktop/wizard.go
-msgid "credentials accepted: %s, role %s"
-msgstr "credenciales aceptadas: %s, rol %s"
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "warning: the credentials could not be verified: %v"
-msgstr "atención: no se pudieron verificar las credenciales: %v"
-
-#: cmd/ntfy-desktop/wizard.go
 msgid "the server refused the credentials: %v"
 msgstr "el servidor rechazó las credenciales: %v"
 
@@ -546,14 +526,6 @@ msgstr "esos topics no se pueden usar: %s"
 #: cmd/ntfy-desktop/wizard.go
 msgid "the topics were left invalid"
 msgstr "los topics quedaron inválidos"
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "read %s: ok"
-msgstr "lectura de %s: ok"
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "warning: %s could not be read now: %v"
-msgstr "atención: %s no se pudo leer ahora: %v"
 
 #: cmd/ntfy-desktop/wizard.go
 msgid "%s cannot be read: %v"
@@ -598,3 +570,111 @@ msgstr "falla"
 #: cmd/ntfy-desktop/config.go
 msgid "read"
 msgstr "lectura"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop"
+msgstr "Configurar ntfy-desktop"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %d of %d · %s"
+msgstr "Configurar ntfy-desktop — %d de %d · %s"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %s"
+msgstr "Configurar ntfy-desktop — %s"
+
+#: internal/dialog/prompt.go
+msgid "topic %s"
+msgstr "topic %s"
+
+#: internal/dialog/prompt.go
+msgid "unknown"
+msgstr "desconocido"
+
+#: internal/dialog/prompt.go
+msgid "a check that could not be verified does not block: the configuration can be saved, and the summary warns about it"
+msgstr "un control que quedó sin verificar no bloquea: se puede guardar, y el resumen lo advierte"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Continue"
+msgstr "Continuar"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Write"
+msgstr "Escribir"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Yes"
+msgstr "Sí"
+
+#: internal/dialog/zenity_prompt.go
+msgid "No"
+msgstr "No"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Topic"
+msgstr "Topic"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "topics to subscribe to"
+msgstr "topics a los que suscribirse"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "add a topic (leave it empty to finish)"
+msgstr "agregá un topic (dejalo vacío para terminar)"
+
+#: cmd/ntfy-desktop/config.go
+msgid "ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"
+msgstr "preguntar con diálogos del escritorio, un paso por diálogo: kdialog en Plasma, zenity como respaldo, el asistente de texto cuando no hay ninguno"
+
+#: cmd/ntfy-desktop/config.go
+msgid "config takes one of --gui, --show, --check or --set"
+msgstr "config acepta una de --gui, --show, --check o --set"
+
+#: cmd/ntfy-desktop/config.go
+msgid "usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"
+msgstr "uso: ntfy-desktop config [--gui | --show | --check | --set clave=valor] [--password-stdin]"
+
+#: cmd/ntfy-desktop/config.go
+msgid "no kdialog or zenity in the PATH: the interview continues in text mode"
+msgstr "no hay kdialog ni zenity en el PATH: la entrevista sigue en modo texto"
+
+#: cmd/ntfy-desktop/config.go
+msgid "there is no desktop session: the interview continues in text mode"
+msgstr "no hay sesión de escritorio: la entrevista sigue en modo texto"
+
+#: cmd/ntfy-desktop/config.go
+msgid "%s is not a dialog tool this program knows: the interview continues in text mode"
+msgstr "%s no es una herramienta de diálogo que este programa conozca: la entrevista sigue en modo texto"
+
+#: cmd/ntfy-desktop/config.go
+msgid "the list needs at least one topic"
+msgstr "la lista necesita al menos un topic"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Server"
+msgstr "Servidor"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Credentials"
+msgstr "Credenciales"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Topics"
+msgstr "Topics"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Verification"
+msgstr "Verificar"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Summary"
+msgstr "Resumen y escribir"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"
+msgstr "se escribe con permisos 0600; la versión anterior, si existe, queda como .bak al lado"

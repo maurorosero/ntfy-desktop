@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -27,7 +28,7 @@ func TestTextPrompterLine(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var out bytes.Buffer
 			p := newTextPrompter(testTranslator(), strings.NewReader(c.answer), &out, &out)
-			got, err := p.Line("question:", c.current)
+			got, err := p.Line(context.Background(), "question:", c.current)
 			if err != nil {
 				t.Fatalf("Line(%q) = error %v; want no error", c.answer, err)
 			}
@@ -60,7 +61,7 @@ func TestTextPrompterYesNo(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var out bytes.Buffer
 			p := newTextPrompter(testTranslator(), strings.NewReader(c.input), &out, &out)
-			got, err := p.YesNo("write?", c.def)
+			got, err := p.YesNo(context.Background(), "write?", c.def)
 			if err != nil {
 				t.Fatalf("YesNo(%q) = error %v; want no error", c.input, err)
 			}
@@ -74,7 +75,7 @@ func TestTextPrompterYesNo(t *testing.T) {
 func TestTextPrompterSecretWithoutATerminal(t *testing.T) {
 	var out bytes.Buffer
 	p := newTextPrompter(testTranslator(), strings.NewReader("s3cr3t\n"), &out, &out)
-	got, err := p.Secret("password:")
+	got, err := p.Secret(context.Background(), "password:")
 	if err != nil {
 		t.Fatalf("Secret() = error %v; want no error", err)
 	}
@@ -89,7 +90,7 @@ func TestTextPrompterSecretWithoutATerminal(t *testing.T) {
 func TestTextPrompterCancelsAtTheEndOfTheInput(t *testing.T) {
 	var out bytes.Buffer
 	p := newTextPrompter(testTranslator(), strings.NewReader(""), &out, &out)
-	if _, err := p.Line("question:", ""); !errors.Is(err, ErrCancelled) {
+	if _, err := p.Line(context.Background(), "question:", ""); !errors.Is(err, ErrCancelled) {
 		t.Errorf("Line() at the end of the input = %v; want ErrCancelled", err)
 	}
 }

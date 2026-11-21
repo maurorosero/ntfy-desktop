@@ -89,6 +89,7 @@ scalars and no reason to grow a parser.
 
 ```sh
 ntfy-desktop config                       # the wizard: server, credentials, topics, summary
+ntfy-desktop config --gui                 # the same wizard, one desktop dialog per step
 ntfy-desktop config --show                # the effective configuration and the path of the file
 ntfy-desktop config --check               # verify the file, the server, the credentials, every topic
 ntfy-desktop config --set server=https://ntfy.sh
@@ -102,6 +103,13 @@ empty answer is kept as the default; `Ctrl-D` stops) leaves the file exactly as 
 with `--set`, `--add` or `--remove` is validated with the same loader and written atomically; an
 invalid file is never the base of an edit, and a change that would leave the file invalid is
 refused.
+
+`--gui` runs the same interview with the dialogs of the desktop instead of the terminal: server,
+credentials, topics, the verification of every control and the summary, one dialog per step. On
+Plasma the dialogs are `kdialog`; `zenity` draws the same steps elsewhere. Without either of them,
+or without a session to draw them in, `--gui` says so in one line and asks in the terminal — it does
+not fail. A cancelled dialog writes nothing, and the password goes from the field to the program
+without ever passing through the argument list.
 
 The password is never an argument, where `ps` and the shell history would see it: the wizard asks for
 it without echoing it (`stty`), and `--password-stdin` reads it from the standard input for a script.
@@ -161,3 +169,8 @@ the result, without a user interface or the network behind them.
 commands that change one key, with the exit codes above. Its questions go through a `Prompter`, so
 the wizard is tested with fixed answers instead of a terminal; `internal/ntfy` provides the three
 checks it runs.
+
+`internal/dialog` — the `Prompter` implementations: `KDialogPrompt` and `ZenityPrompt` run the tool
+as a child process, one dialog per step, and translate its exit codes (`0` yes, `1` no or cancel,
+`2` cancel; zenity needs `ZENITY_EXTRA` to tell a rejection from a cancel) into an answer, a
+cancellation or an error. They draw no widget of their own: no Qt and no GTK are linked.

@@ -272,10 +272,6 @@ msgid "expected a quoted value on this line"
 msgstr ""
 
 #: cmd/ntfy-desktop/config.go
-msgid "usage: ntfy-desktop config [--show | --check | --set key=value] [--password-stdin]"
-msgstr ""
-
-#: cmd/ntfy-desktop/config.go
 msgid "       ntfy-desktop config topic --add name | --remove name"
 msgstr ""
 
@@ -293,10 +289,6 @@ msgstr ""
 
 #: cmd/ntfy-desktop/config.go
 msgid "read the password from the standard input instead of asking for it without echo"
-msgstr ""
-
-#: cmd/ntfy-desktop/config.go
-msgid "config takes one of --show, --check or --set"
 msgstr ""
 
 #: cmd/ntfy-desktop/config.go
@@ -496,10 +488,6 @@ msgid "%s is not an ntfy server"
 msgstr ""
 
 #: cmd/ntfy-desktop/wizard.go
-msgid "warning: %s does not answer now: %v"
-msgstr ""
-
-#: cmd/ntfy-desktop/wizard.go
 msgid "does the server use a user name and password?"
 msgstr ""
 
@@ -520,14 +508,6 @@ msgid "the credentials were left incomplete"
 msgstr ""
 
 #: cmd/ntfy-desktop/wizard.go
-msgid "credentials accepted: %s, role %s"
-msgstr ""
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "warning: the credentials could not be verified: %v"
-msgstr ""
-
-#: cmd/ntfy-desktop/wizard.go
 msgid "the server refused the credentials: %v"
 msgstr ""
 
@@ -545,14 +525,6 @@ msgstr ""
 
 #: cmd/ntfy-desktop/wizard.go
 msgid "the topics were left invalid"
-msgstr ""
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "read %s: ok"
-msgstr ""
-
-#: cmd/ntfy-desktop/wizard.go
-msgid "warning: %s could not be read now: %v"
 msgstr ""
 
 #: cmd/ntfy-desktop/wizard.go
@@ -598,3 +570,111 @@ msgstr ""
 #: cmd/ntfy-desktop/config.go
 msgid "read"
 msgstr ""
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop"
+msgstr "Configure ntfy-desktop"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %d of %d · %s"
+msgstr "Configure ntfy-desktop — %d of %d · %s"
+
+#: internal/dialog/prompt.go
+msgid "Configure ntfy-desktop — %s"
+msgstr "Configure ntfy-desktop — %s"
+
+#: internal/dialog/prompt.go
+msgid "topic %s"
+msgstr "topic %s"
+
+#: internal/dialog/prompt.go
+msgid "unknown"
+msgstr "unknown"
+
+#: internal/dialog/prompt.go
+msgid "a check that could not be verified does not block: the configuration can be saved, and the summary warns about it"
+msgstr "a check that could not be verified does not block: the configuration can be saved, and the summary warns about it"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Continue"
+msgstr "Continue"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Cancel"
+msgstr "Cancel"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "Write"
+msgstr "Write"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Yes"
+msgstr "Yes"
+
+#: internal/dialog/zenity_prompt.go
+msgid "No"
+msgstr "No"
+
+#: internal/dialog/zenity_prompt.go
+msgid "Topic"
+msgstr "Topic"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "topics to subscribe to"
+msgstr "topics to subscribe to"
+
+#: internal/dialog/kdialog_prompt.go
+msgid "add a topic (leave it empty to finish)"
+msgstr "add a topic (leave it empty to finish)"
+
+#: cmd/ntfy-desktop/config.go
+msgid "ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"
+msgstr "ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"
+
+#: cmd/ntfy-desktop/config.go
+msgid "config takes one of --gui, --show, --check or --set"
+msgstr "config takes one of --gui, --show, --check or --set"
+
+#: cmd/ntfy-desktop/config.go
+msgid "usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"
+msgstr "usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"
+
+#: cmd/ntfy-desktop/config.go
+msgid "no kdialog or zenity in the PATH: the interview continues in text mode"
+msgstr "no kdialog or zenity in the PATH: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "there is no desktop session: the interview continues in text mode"
+msgstr "there is no desktop session: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "%s is not a dialog tool this program knows: the interview continues in text mode"
+msgstr "%s is not a dialog tool this program knows: the interview continues in text mode"
+
+#: cmd/ntfy-desktop/config.go
+msgid "the list needs at least one topic"
+msgstr "the list needs at least one topic"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Server"
+msgstr "Server"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Credentials"
+msgstr "Credentials"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Topics"
+msgstr "Topics"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Verification"
+msgstr "Verification"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "Summary"
+msgstr "Summary"
+
+#: cmd/ntfy-desktop/wizard.go
+msgid "it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"
+msgstr "it is written with 0600 permissions; the previous version, if any, is kept as a .bak next to it"

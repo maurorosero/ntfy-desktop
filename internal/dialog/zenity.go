@@ -78,7 +78,12 @@ const extraExitCode = "2"
 // env is the environment the dialog runs with: the caller's, minus any
 // ZENITY_EXTRA the session may carry, plus ours, so the code cannot be taken
 // by surprise.
-func (z *Zenity) env() []string {
+func (z *Zenity) env() []string { return zenityEnv() }
+
+// zenityEnv is the environment of every zenity dialog of this package. Both
+// adapters share it: the extra button is the way to tell a rejection from a
+// cancel, and the two windows have to read it the same way.
+func zenityEnv() []string {
 	env := os.Environ()
 	out := make([]string, 0, len(env)+1)
 	for _, kv := range env {

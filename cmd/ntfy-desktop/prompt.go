@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/maurorosero/ntfy-desktop/internal/dialog"
 	"github.com/maurorosero/ntfy-desktop/internal/i18n"
+	"github.com/maurorosero/ntfy-desktop/internal/ntfy"
 )
 
 // textPrompter asks through the terminal, one question at a time: a line, a
@@ -38,7 +41,7 @@ func newTextPrompter(tr *i18n.Translator, in io.Reader, out, warn io.Writer) *te
 }
 
 // Line asks for a line and offers current as the value Enter keeps.
-func (p *textPrompter) Line(question, current string) (string, error) {
+func (p *textPrompter) Line(_ context.Context, question, current string) (string, error) {
 	if current != "" {
 		fmt.Fprintf(p.out, "%s [%s] ", question, current)
 	} else {
@@ -57,7 +60,7 @@ func (p *textPrompter) Line(question, current string) (string, error) {
 // Secret asks for a value that is not echoed. When the echo cannot be turned
 // off the value is read anyway, with the warning that it will be visible: a
 // missing stty must not stop the configuration.
-func (p *textPrompter) Secret(question string) (string, error) {
+func (p *textPrompter) Secret(_ context.Context, question string) (string, error) {
 	fmt.Fprintf(p.out, "%s ", question)
 	if p.terminal == nil {
 		return p.readLine()
@@ -81,7 +84,7 @@ func (p *textPrompter) Secret(question string) (string, error) {
 
 // YesNo asks a closed question. Enter keeps def, and anything that is not an
 // answer asks again instead of guessing.
-func (p *textPrompter) YesNo(question string, def bool) (bool, error) {
+func (p *textPrompter) YesNo(_ context.Context, question string, def bool) (bool, error) {
 	hint := p.tr.T("y/n")
 	if def {
 		hint = p.tr.T("Y/n")
@@ -108,6 +111,59 @@ func (p *textPrompter) YesNo(question string, def bool) (bool, error) {
 func (p *textPrompter) Note(text string) {
 	fmt.Fprintln(p.out, text)
 }
+
+// Step does nothing: the terminal asks one question at a time and the question
+// itself says where the interview is. The desktop front end uses it for the
+// title of the dialog.
+func (p *textPrompter) Step(int, int, string) {}
+
+// Topics asks for the list as one comma separated line. Splitting and
+// validating is the wizard's: a name is refused by name, and the question
+// comes back with what the person wrote.
+func (p *textPrompter) Topics(ctx context.Context, current []string) ([]string, error) {
+	answer, err := p.Line(ctx, p.tr.T("topics, separated by commas:"), strings.Join(current, ", "))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(answer, ","), nil
+}
+
+// Report prints the outcome of every check, one line each.
+func (p *textPrompter) Report(_ context.Context, report ntfy.Report, server string) error {
+	for _, line := range dialog.ReportLines(report, server, p.tr) {
+		fmt.Fprintf(p.out, "  %s\n", line.String(p.tr))
+	}
+	if footer := dialog.ReportFooter(report, p.tr); footer != "" {
+		fmt.Fprintln(p.out, footer)
+	}
+	return nil
+}
+
+// Confirm prints the body and asks the question: what a dialog shows in two
+// windows is two paragraphs and a yes/no here.
+func (p *textPrompter) Confirm(ctx context.Context, question, body string) (bool, error) {
+	for _, line := range strings.Split(body, "\n") {
+		fmt.Fprintln(p.out, line)
+	}
+	return p.YesNo(ctx, question, true)
+}
+
+// Warn prints a problem the person has to read.
+func (p *textPrompter) Warn(_ context.Context, text string) error {
+	fmt.Fprintln(p.out, text)
+	return nil
+}
+
+// Done prints the closing message of the interview.
+func (p *textPrompter) Done(_ context.Context, text string) error {
+	for _, line := range strings.Split(text, "\n") {
+		fmt.Fprintln(p.out, line)
+	}
+	return nil
+}
+
+// textPrompter is a Prompter; the check fails at compile time if it drifts.
+var _ dialog.Prompter = (*textPrompter)(nil)
 
 // readLine reads one answer. A stream that ends —Ctrl-D, or the last line of a
 // script without its newline— is the person stopping the wizard, which is a

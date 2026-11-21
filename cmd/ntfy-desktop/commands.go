@@ -82,7 +82,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	case commandHistory:
 		return runHistory(opts, tr, stdout, stderr)
 	case commandConfig:
-		return runConfig(ctx, opts, tr, os.Stdin, stdout, stderr)
+		return runConfig(ctx, opts, env, tr, os.Stdin, stdout, stderr)
 	case commandVersion:
 		fmt.Fprintf(stdout, "ntfy-desktop %s\n", version.Version)
 		return 0

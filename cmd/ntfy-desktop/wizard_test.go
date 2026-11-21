@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/maurorosero/ntfy-desktop/internal/config"
+	"github.com/maurorosero/ntfy-desktop/internal/dialog"
 	"github.com/maurorosero/ntfy-desktop/internal/ntfy"
 )
 
@@ -24,7 +25,8 @@ type scriptedPrompter struct {
 	cancelAt int // when > 0, the answer with this number is a cancellation
 	asked    int
 
-	notes []string
+	notes   []string
+	reports []ntfy.Report
 }
 
 func (s *scriptedPrompter) answer() error {
@@ -35,7 +37,7 @@ func (s *scriptedPrompter) answer() error {
 	return nil
 }
 
-func (s *scriptedPrompter) Line(question, current string) (string, error) {
+func (s *scriptedPrompter) Line(_ context.Context, question, current string) (string, error) {
 	if err := s.answer(); err != nil {
 		return "", err
 	}
@@ -47,7 +49,7 @@ func (s *scriptedPrompter) Line(question, current string) (string, error) {
 	return answer, nil
 }
 
-func (s *scriptedPrompter) Secret(question string) (string, error) {
+func (s *scriptedPrompter) Secret(_ context.Context, question string) (string, error) {
 	if err := s.answer(); err != nil {
 		return "", err
 	}
@@ -59,7 +61,7 @@ func (s *scriptedPrompter) Secret(question string) (string, error) {
 	return answer, nil
 }
 
-func (s *scriptedPrompter) YesNo(question string, def bool) (bool, error) {
+func (s *scriptedPrompter) YesNo(_ context.Context, question string, def bool) (bool, error) {
 	if err := s.answer(); err != nil {
 		return false, err
 	}
@@ -69,6 +71,45 @@ func (s *scriptedPrompter) YesNo(question string, def bool) (bool, error) {
 	answer := s.yes[0]
 	s.yes = s.yes[1:]
 	return answer, nil
+}
+
+// Topics reads the answer the way the text front end does: one comma
+// separated line, split without validating, so the wizard decides.
+func (s *scriptedPrompter) Topics(ctx context.Context, current []string) ([]string, error) {
+	answer, err := s.Line(ctx, "topics", strings.Join(current, ", "))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(answer, ","), nil
+}
+
+// Report keeps the verification and prints its lines, as the text front end
+// does.
+func (s *scriptedPrompter) Report(_ context.Context, report ntfy.Report, server string) error {
+	s.reports = append(s.reports, report)
+	for _, line := range dialog.ReportLines(report, server, testTranslator()) {
+		s.notes = append(s.notes, line.String(testTranslator()))
+	}
+	return nil
+}
+
+// Confirm records the body —the summary is asserted through said()— and
+// answers with the next planned yes or no.
+func (s *scriptedPrompter) Confirm(ctx context.Context, question, body string) (bool, error) {
+	s.notes = append(s.notes, body)
+	return s.YesNo(ctx, question, true)
+}
+
+func (s *scriptedPrompter) Step(int, int, string) {}
+
+func (s *scriptedPrompter) Warn(_ context.Context, text string) error {
+	s.notes = append(s.notes, text)
+	return nil
+}
+
+func (s *scriptedPrompter) Done(_ context.Context, text string) error {
+	s.notes = append(s.notes, text)
+	return nil
 }
 
 func (s *scriptedPrompter) Note(text string) { s.notes = append(s.notes, text) }

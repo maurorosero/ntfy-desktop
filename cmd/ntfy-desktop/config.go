@@ -10,11 +10,15 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/maurorosero/ntfy-desktop/internal/config"
+	"github.com/maurorosero/ntfy-desktop/internal/dialog"
 	"github.com/maurorosero/ntfy-desktop/internal/i18n"
 	"github.com/maurorosero/ntfy-desktop/internal/ntfy"
+	"github.com/maurorosero/ntfy-desktop/internal/platform"
 	"github.com/maurorosero/ntfy-desktop/internal/setup"
 )
 
@@ -54,6 +58,7 @@ const attempts = 3
 type configOptions struct {
 	show          bool
 	check         bool
+	gui           bool
 	setKey        string // key of --set, "" when the flag was not given
 	setValue      string
 	topicAdd      string
@@ -83,12 +88,13 @@ func (o *options) parseConfig(args []string, tr *i18n.Translator, stderr io.Writ
 	fs := flag.NewFlagSet("ntfy-desktop config", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
-		fmt.Fprintln(stderr, tr.T("usage: ntfy-desktop config [--show | --check | --set key=value] [--password-stdin]"))
+		fmt.Fprintln(stderr, tr.T("usage: ntfy-desktop config [--gui | --show | --check | --set key=value] [--password-stdin]"))
 		fmt.Fprintln(stderr, tr.T("       ntfy-desktop config topic --add name | --remove name"))
 		fs.PrintDefaults()
 	}
 	fs.BoolVar(&c.show, "show", false, tr.T("show the effective configuration and the path of the file"))
 	fs.BoolVar(&c.check, "check", false, tr.T("verify the file, the server, the credentials and every topic, and write nothing"))
+	fs.BoolVar(&c.gui, "gui", false, tr.T("ask with desktop dialogs, one step per dialog: kdialog on Plasma, zenity as a fallback, the text wizard when there is neither"))
 	set := fs.String("set", "", tr.T("change one key: server, topic, user or log-level"))
 	fs.BoolVar(&c.passwordStdin, "password-stdin", false, tr.T("read the password from the standard input instead of asking for it without echo"))
 
@@ -106,13 +112,13 @@ func (o *options) parseConfig(args []string, tr *i18n.Translator, stderr io.Writ
 	fs.Visit(func(f *flag.Flag) { given[f.Name] = true })
 
 	actions := 0
-	for _, name := range []string{"show", "check", "set"} {
+	for _, name := range []string{"gui", "show", "check", "set"} {
 		if given[name] {
 			actions++
 		}
 	}
 	if actions > 1 {
-		return errors.New(tr.T("config takes one of --show, --check or --set"))
+		return errors.New(tr.T("config takes one of --gui, --show, --check or --set"))
 	}
 
 	if given["set"] {
@@ -130,7 +136,7 @@ func (o *options) parseConfig(args []string, tr *i18n.Translator, stderr io.Writ
 		}
 	}
 
-	if c.passwordStdin && (c.show || c.check) {
+	if c.passwordStdin && (c.show || c.check || c.gui) {
 		return errors.New(tr.T("--password-stdin goes with --set, or alone to change only the password"))
 	}
 
@@ -181,7 +187,7 @@ func (o *options) parseConfigTopic(args []string, tr *i18n.Translator, stderr io
 
 // runConfig runs the config command: show, check, edit or interview, over the
 // file the program reads.
-func runConfig(ctx context.Context, opts options, tr *i18n.Translator, stdin io.Reader, stdout, stderr io.Writer) int {
+func runConfig(ctx context.Context, opts options, env platform.Env, tr *i18n.Translator, stdin io.Reader, stdout, stderr io.Writer) int {
 	path, err := config.DefaultPath()
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -197,9 +203,43 @@ func runConfig(ctx context.Context, opts options, tr *i18n.Translator, stdin io.
 	case c.topicAdd != "" || c.topicRemove != "" || c.setKey != "" || c.passwordStdin:
 		return editConfiguration(ctx, c, path, tr, stdin, stdout, stderr)
 	default:
-		pr := newTextPrompter(tr, stdin, stdout, stderr)
+		pr := prompterFor(c, env, tr, stdin, stdout, stderr)
 		return runWizard(ctx, path, pr, func(cfg config.Config) Prober { return ntfy.NewProbe(cfg) }, tr)
 	}
+}
+
+// prompterFor picks the front end of the interview. --gui asks the desktop for
+// its dialog tool; when there is none, or no session to draw it in, the text
+// wizard runs and says so in one line instead of failing.
+func prompterFor(c configOptions, env platform.Env, tr *i18n.Translator, stdin io.Reader, stdout, stderr io.Writer) Prompter {
+	text := func() Prompter { return newTextPrompter(tr, stdin, stdout, stderr) }
+	if !c.gui {
+		return text()
+	}
+	switch {
+	case env.DialogTool == "":
+		fmt.Fprintln(stderr, tr.T("no kdialog or zenity in the PATH: the interview continues in text mode"))
+		return text()
+	case !hasDisplay():
+		fmt.Fprintln(stderr, tr.T("there is no desktop session: the interview continues in text mode"))
+		return text()
+	}
+	switch filepath.Base(env.DialogTool) {
+	case "kdialog":
+		return dialog.NewKDialogPrompt(env.DialogTool, tr)
+	case "zenity":
+		return dialog.NewZenityPrompt(env.DialogTool, tr)
+	default:
+		fmt.Fprintln(stderr, tr.T("%s is not a dialog tool this program knows: the interview continues in text mode", env.DialogTool))
+		return text()
+	}
+}
+
+// hasDisplay reports whether the session has a screen a dialog could be drawn
+// on. Without one, kdialog and zenity have nowhere to open, and a wizard that
+// hung on an error no window could show would be worse than the text one.
+func hasDisplay() bool {
+	return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
 }
 
 // loadConfig reads the file and says why it cannot be used: a missing one is
@@ -467,13 +507,22 @@ func normalise(key, value string, tr *i18n.Translator) (string, error) {
 }
 
 // parseTopics reads the list a person typed: comma separated, where the spaces
-// around a name are typing and not part of it. An empty name and a repeated
-// one are refused by name, because "the topics are invalid" says nothing when
-// there are several.
+// around a name are typing and not part of it.
 func parseTopics(value string, tr *i18n.Translator) ([]string, error) {
-	var list []string
-	seen := make(map[string]bool, len(value))
-	for _, raw := range strings.Split(value, ",") {
+	return validateTopics(strings.Split(value, ","), tr)
+}
+
+// validateTopics applies the rules of the file to a list of names: every one
+// is valid on its own, none repeats, and the list is not empty. An empty name
+// and a repeated one are refused by name, because "the topics are invalid" says
+// nothing when there are several.
+func validateTopics(list []string, tr *i18n.Translator) ([]string, error) {
+	if len(list) == 0 {
+		return nil, errors.New(tr.T("the list needs at least one topic"))
+	}
+	out := make([]string, 0, len(list))
+	seen := make(map[string]bool, len(list))
+	for _, raw := range list {
 		name := strings.TrimSpace(raw)
 		if err := config.CheckTopic(name); err != nil {
 			return nil, fmt.Errorf(tr.T("%q is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores"), name)
@@ -482,9 +531,19 @@ func parseTopics(value string, tr *i18n.Translator) ([]string, error) {
 			return nil, fmt.Errorf(tr.T("%q is already in the topic list"), name)
 		}
 		seen[name] = true
-		list = append(list, name)
+		out = append(out, name)
 	}
-	return list, nil
+	return out, nil
+}
+
+// trimAll trims the names a front end already split, so asking again starts
+// from what the person chose instead of from the raw text.
+func trimAll(list []string) []string {
+	out := make([]string, len(list))
+	for i, name := range list {
+		out[i] = strings.TrimSpace(name)
+	}
+	return out
 }
 
 // readPassword reads one line from the standard input. It is the only way a
@@ -534,32 +593,4 @@ func writeDraft(ctx context.Context, draft *setup.Draft, verify bool, tr *i18n.T
 		fmt.Fprintln(stdout, tr.T("the previous version is in %s", result.Backup))
 	}
 	return exitOK
-}
-
-// describe turns a configuration error into one line: the parts that come from
-// the catalogues are translated, and the rest stays as the package wrote it.
-func describe(tr *i18n.Translator, err error) string {
-	var line *config.LineError
-	if errors.As(err, &line) {
-		return tr.T("line %d: %s", line.Line, describe(tr, line.Err))
-	}
-	var invalid *config.ValidationError
-	if errors.As(err, &invalid) {
-		return fmt.Sprintf("%s: %s", invalid.Field, tr.T(invalid.Msg, invalid.Args...))
-	}
-	var syntax *config.SyntaxError
-	if errors.As(err, &syntax) {
-		if syntax.Key == "" {
-			return tr.T("line %d: %s", syntax.Line, tr.T(syntax.Msg))
-		}
-		return tr.T("line %d: %s %q", syntax.Line, tr.T(syntax.Msg), syntax.Key)
-	}
-	var edit *config.EditError
-	if errors.As(err, &edit) {
-		if edit.Line == 0 {
-			return fmt.Sprintf("%s: %s", edit.Key, tr.T(edit.Msg, edit.Args...))
-		}
-		return tr.T("line %d: %s: %s", edit.Line, edit.Key, tr.T(edit.Msg, edit.Args...))
-	}
-	return err.Error()
 }
