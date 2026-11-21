@@ -1,0 +1,1 @@
+The daemon keeps the local history: every message it receives is stored, and `ntfy-desktop history` lists what arrived while nobody was looking. What was published while the daemon was stopped is recovered from the server on the next start, and a message stops being unread once you answer its decision or open the notification.

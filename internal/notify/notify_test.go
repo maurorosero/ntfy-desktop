@@ -130,7 +130,7 @@ func newTestNotifier(t *testing.T, s sender, o opener, tr *i18n.Translator) (*DB
 		log:     slog.New(logs),
 		tr:      tr,
 		sending: make(chan struct{}, 1),
-		links:   make(map[uint32]string),
+		targets: make(map[uint32]target),
 	}, logs
 }
 
@@ -516,14 +516,90 @@ func TestClosedForgetsTheLink(t *testing.T) {
 	}
 }
 
+// TestClickReportsTheMessage is the wiring the daemon needs: opening the
+// notification tells which message it came from, and the link still opens.
+func TestClickReportsTheMessage(t *testing.T) {
+	s := &fakeSender{}
+	o := newFakeOpener()
+	d, _ := newTestNotifier(t, s, o, nil)
+
+	clicked := make(chan ntfy.Message, 1)
+	d.click = func(m ntfy.Message) error {
+		clicked <- m
+		return nil
+	}
+
+	msg := ntfy.Message{ID: "abc", Event: ntfy.EventMessage, Topic: "ops", Message: "done", Click: "https://example.com/a"}
+	if err := d.Show(context.Background(), msg); err != nil {
+		t.Fatalf("Show() = %v; want nil", err)
+	}
+
+	d.actionInvoked(&dbusnotify.ActionInvokedSignal{ID: 1, ActionKey: actionOpen})
+
+	select {
+	case got := <-clicked:
+		if got.ID != "abc" || got.Topic != "ops" {
+			t.Errorf("click reported message %q of topic %q; want %q of %q", got.ID, got.Topic, "abc", "ops")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the click was not reported within 2s")
+	}
+
+	select {
+	case got := <-o.urls:
+		if got != "https://example.com/a" {
+			t.Errorf("opened %q; want %q", got, "https://example.com/a")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the opener was not called within 2s")
+	}
+}
+
+// TestClickOutcomes checks that a failing or missing callback never costs the
+// click: the link opens either way, and a failure is only a logged line.
+func TestClickOutcomes(t *testing.T) {
+	cases := []struct {
+		name    string
+		click   func(ntfy.Message) error
+		wantLog bool
+	}{
+		{name: "no callback", click: nil, wantLog: false},
+		{name: "callback succeeds", click: func(ntfy.Message) error { return nil }, wantLog: false},
+		{name: "callback fails", click: func(ntfy.Message) error { return errors.New("the history is read-only") }, wantLog: true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := &fakeSender{}
+			o := newFakeOpener()
+			d, logs := newTestNotifier(t, s, o, nil)
+			d.click = c.click
+
+			msg := ntfy.Message{ID: "abc", Event: ntfy.EventMessage, Message: "done", Click: "https://example.com/a"}
+			if err := d.Show(context.Background(), msg); err != nil {
+				t.Fatalf("Show() = %v; want nil", err)
+			}
+			d.actionInvoked(&dbusnotify.ActionInvokedSignal{ID: 1, ActionKey: actionOpen})
+
+			select {
+			case <-o.urls:
+			case <-time.After(2 * time.Second):
+				t.Fatal("the link was not opened within 2s")
+			}
+			if got := logs.warned(); got != c.wantLog {
+				t.Errorf("failure logged = %v; want %v", got, c.wantLog)
+			}
+		})
+	}
+}
+
 func TestRememberedLinksStayBounded(t *testing.T) {
 	s := &fakeSender{}
 	d, _ := newTestNotifier(t, s, newFakeOpener(), nil)
 	for i := 0; i < maxTrackedLinks+10; i++ {
-		d.remember(uint32(i+1), "https://example.com/a")
+		d.remember(uint32(i+1), target{link: "https://example.com/a"})
 	}
 	d.mu.Lock()
-	got := len(d.links)
+	got := len(d.targets)
 	d.mu.Unlock()
 	if got > maxTrackedLinks {
 		t.Errorf("tracked %d links; want at most %d", got, maxTrackedLinks)

@@ -150,7 +150,7 @@ func TestSuperviseShutsDown(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	returned := make(chan struct{})
 	go func() {
-		supervise(ctx, discardLogger(), msgs, failures, show, submit)
+		supervise(ctx, discardLogger(), msgs, failures, ports{show: show, submit: submit})
 		close(returned)
 	}()
 
@@ -205,7 +205,7 @@ func TestSuperviseEndsWithTheChannels(t *testing.T) {
 
 	returned := make(chan struct{})
 	go func() {
-		supervise(context.Background(), discardLogger(), msgs, failures, nil, nil)
+		supervise(context.Background(), discardLogger(), msgs, failures, ports{})
 		close(returned)
 	}()
 	select {

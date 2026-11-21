@@ -305,6 +305,104 @@ func TestSubscribeReconnectsWithSince(t *testing.T) {
 	}
 }
 
+// TestSubscribeStartsWithSince is the restore of what arrived while the program
+// was not running: the first request carries the id the history kept.
+func TestSubscribeStartsWithSince(t *testing.T) {
+	const open = `{"id":"","time":1,"event":"open","topic":"alerts"}`
+
+	seen := make(chan string, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case seen <- r.URL.Query().Get("since"):
+		default:
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, open)
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, time.Hour, WithSince("m9"))
+	msgs, _ := client.Subscribe(ctx)
+	select {
+	case <-msgs:
+	case <-ctx.Done():
+		t.Fatal("timed out waiting for the open event")
+	}
+
+	select {
+	case got := <-seen:
+		if got != "m9" {
+			t.Errorf("first request since = %q; want %q", got, "m9")
+		}
+	case <-ctx.Done():
+		t.Fatal("the server did not see the request")
+	}
+}
+
+// TestSubscribeDropsARefusedSince is the guarantee that a resume point the
+// server no longer holds does not leave the client retrying it forever: the
+// refused attempt is reported and the next one asks for the live stream.
+func TestSubscribeDropsARefusedSince(t *testing.T) {
+	const open = `{"id":"","time":1,"event":"open","topic":"alerts"}`
+
+	since := make(chan string, 4)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got := r.URL.Query().Get("since")
+		since <- got
+		if got != "" {
+			http.Error(w, "message not found", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, open)
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, 5*time.Millisecond, WithSince("gone"))
+	msgs, errs := client.Subscribe(ctx)
+
+	var reported bool
+	for !reported {
+		select {
+		case err := <-errs:
+			var status *StatusError
+			if !errors.As(err, &status) {
+				t.Fatalf("error %v is %T; want *StatusError", err, status)
+			}
+			reported = true
+			continue
+		case <-ctx.Done():
+			t.Fatal("the refused attempt was not reported")
+		}
+	}
+
+	select {
+	case m := <-msgs:
+		if m.Event != EventOpen {
+			t.Errorf("event after dropping the since = %q; want %q", m.Event, EventOpen)
+		}
+	case <-ctx.Done():
+		t.Fatal("the client did not resubscribe without the since")
+	}
+
+	if first := <-since; first != "gone" {
+		t.Errorf("first request since = %q; want %q", first, "gone")
+	}
+	if second := <-since; second != "" {
+		t.Errorf("second request since = %q; want it empty", second)
+	}
+}
+
 func TestSubscribeAuth(t *testing.T) {
 	cases := []struct {
 		name string
