@@ -103,5 +103,8 @@ level=ERROR msg="the configuration is not usable" path=/home/mrosero/.config/ntf
 
 ## Where the code lives
 
-`internal/config` — loading, validation and the typed errors. Its tests are table-driven and cover
-each refusal above, plus the escapes and the comments.
+`internal/config` — loading, validation, the typed errors and the atomic write. Its tests are
+table-driven and cover each refusal above, plus the escapes and the comments.
+
+`internal/setup` — the operations that read the file, change one key or the list of topics and write
+the result, without a user interface or the network behind them.

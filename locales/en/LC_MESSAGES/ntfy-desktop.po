@@ -253,3 +253,19 @@ msgstr "no unread messages"
 #: cmd/ntfy-desktop/history.go
 msgid "(no title)"
 msgstr "(no title)"
+
+#: internal/config/document.go
+msgid "cannot remove the only topic"
+msgstr "cannot remove the only topic"
+
+#: internal/config/document.go
+msgid "%q is already in the topic list"
+msgstr "%q is already in the topic list"
+
+#: internal/config/document.go
+msgid "%q is not in the topic list"
+msgstr "%q is not in the topic list"
+
+#: internal/config/document.go
+msgid "expected a quoted value on this line"
+msgstr "expected a quoted value on this line"

@@ -254,3 +254,19 @@ msgstr "no hay mensajes sin leer"
 #: cmd/ntfy-desktop/history.go
 msgid "(no title)"
 msgstr "(sin título)"
+
+#: internal/config/document.go
+msgid "cannot remove the only topic"
+msgstr "no se puede quitar el único topic"
+
+#: internal/config/document.go
+msgid "%q is already in the topic list"
+msgstr "%q ya está en la lista de topics"
+
+#: internal/config/document.go
+msgid "%q is not in the topic list"
+msgstr "%q no está en la lista de topics"
+
+#: internal/config/document.go
+msgid "expected a quoted value on this line"
+msgstr "falta el valor entre comillas en esta línea"
