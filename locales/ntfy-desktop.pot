@@ -57,6 +57,10 @@ msgid "must be 1 to 64 characters of letters, digits, dashes or underscores"
 msgstr ""
 
 #: internal/config/config.go
+msgid "%q is not a valid topic: use 1 to 64 characters of letters, digits, dashes or underscores"
+msgstr ""
+
+#: internal/config/config.go
 msgid "must not contain a colon"
 msgstr ""
 
@@ -203,6 +207,10 @@ msgstr ""
 
 #: cmd/ntfy-desktop/publish.go
 msgid "the server did not return a message id"
+msgstr ""
+
+#: cmd/ntfy-desktop/publish.go
+msgid "the configuration names several topics: say which one to publish to as an argument or with --topic"
 msgstr ""
 
 #: cmd/ntfy-desktop/publish.go

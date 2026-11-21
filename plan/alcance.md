@@ -99,7 +99,7 @@ silencio.
 
 ```toml
 server    = "https://ntfy.example.org"   # obligatoria, http o https, sin query ni fragmento
-topic     = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-]
+topic     = "alerts"                     # obligatoria: 1 a 64 de [A-Za-z0-9_-] cada uno, separados por comas
 user      = "andrea"                     # opcional, junto con password
 password  = "…"                          # opcional, junto con user
 log-level = "info"                       # opcional: debug, info, warn o error
@@ -107,6 +107,10 @@ log-level = "info"                       # opcional: debug, info, warn o error
 
 Sin `user` ni `password` el cliente se suscribe sin credenciales. Las secciones `[tabla]` todavía
 no se aceptan: hoy la configuración es de una sola suscripción y las claves van sueltas.
+
+`topic` acepta varios nombres separados por comas: es una sola suscripción a la lista, con una
+conexión al stream y cada mensaje con su `topic`. Un segmento vacío o inválido es error con el
+segmento nombrado, y `publish` exige destino explícito cuando hay más de uno configurado.
 
 ## 5. Funcionalidades de un cliente ntfy
 
@@ -123,7 +127,7 @@ La columna Estado define qué entra en cada hito.
 | Identidad tomada del usuario de la sesión | **núcleo** |
 | Reconexión con espera creciente | **núcleo** |
 | Recuperar lo perdido (`since=<id>`) | **núcleo** |
-| Varios topics a la vez | siguiente |
+| Varios topics a la vez (una conexión, lista separada por comas) | **núcleo** |
 | Filtros del servidor: `id`, `message`, `title`, `priority`, `tags` | siguiente |
 | Poll y último mensaje (`poll=1`, `since=latest`) | siguiente |
 | SSE y WebSocket | después |

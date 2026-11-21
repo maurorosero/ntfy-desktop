@@ -22,60 +22,89 @@ func TestEndpoint(t *testing.T) {
 	cases := []struct {
 		name   string
 		server string
-		topic  string
+		topics []string
 		since  string
 		want   string
 	}{
 		{
 			name:   "public server",
 			server: "https://ntfy.sh",
-			topic:  "alerts",
+			topics: []string{"alerts"},
 			want:   "https://ntfy.sh/alerts/json",
 		},
 		{
 			name:   "trailing slash in the server",
 			server: "https://ntfy.sh/",
-			topic:  "alerts",
+			topics: []string{"alerts"},
 			want:   "https://ntfy.sh/alerts/json",
 		},
 		{
 			name:   "server with a path prefix",
 			server: "https://example.org/ntfy",
-			topic:  "builds",
+			topics: []string{"builds"},
 			want:   "https://example.org/ntfy/builds/json",
+		},
+		{
+			// The comma is the separator of the protocol: it travels literal,
+			// not as %2C, or the server would look for one topic with a comma.
+			name:   "two topics joined with a literal comma",
+			server: "https://ntfy.sh",
+			topics: []string{"casa", "pruebas-multi"},
+			want:   "https://ntfy.sh/casa,pruebas-multi/json",
+		},
+		{
+			// Each name is escaped and the commas between them are not: a name
+			// that needs escaping keeps its own %XX.
+			name:   "two topics escape each name and not the separator",
+			server: "https://ntfy.sh",
+			topics: []string{"a b", "c#d"},
+			want:   "https://ntfy.sh/a%20b,c%23d/json",
+		},
+		{
+			name:   "two topics with a path prefix",
+			server: "https://example.org/ntfy/",
+			topics: []string{"casa", "pruebas"},
+			want:   "https://example.org/ntfy/casa,pruebas/json",
+		},
+		{
+			name:   "two topics and since",
+			server: "https://ntfy.sh",
+			topics: []string{"casa", "pruebas"},
+			since:  "hwQ2YpKdmg",
+			want:   "https://ntfy.sh/casa,pruebas/json?since=hwQ2YpKdmg",
 		},
 		{
 			name:   "since the last message",
 			server: "https://ntfy.sh",
-			topic:  "alerts",
+			topics: []string{"alerts"},
 			since:  "hwQ2YpKdmg",
 			want:   "https://ntfy.sh/alerts/json?since=hwQ2YpKdmg",
 		},
 		{
 			name:   "since with characters that need escaping",
 			server: "https://ntfy.sh",
-			topic:  "alerts",
+			topics: []string{"alerts"},
 			since:  "a b&c",
 			want:   "https://ntfy.sh/alerts/json?since=a+b%26c",
 		},
 		{
 			name:   "local server with a port",
 			server: "http://localhost:2586",
-			topic:  "a_b-1",
+			topics: []string{"a_b-1"},
 			want:   "http://localhost:2586/a_b-1/json",
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			client := New(config.Config{ServerURL: c.server, Topic: c.topic})
+			client := New(config.Config{ServerURL: c.server, Topics: c.topics})
 			got, err := client.endpoint(c.since)
 			if err != nil {
 				t.Fatalf("endpoint(%q) = error %v; want no error", c.since, err)
 			}
 			if got != c.want {
-				t.Errorf("endpoint(%q) with server %q and topic %q = %q; want %q",
-					c.since, c.server, c.topic, got, c.want)
+				t.Errorf("endpoint(%q) with server %q and topics %q = %q; want %q",
+					c.since, c.server, c.topics, got, c.want)
 			}
 		})
 	}
@@ -138,7 +167,7 @@ func TestSubscribeDeliversMessages(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	client := newClient(config.Config{ServerURL: srv.URL, Topic: "alerts"}, time.Hour)
+	client := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, time.Hour)
 	msgs, errs := client.Subscribe(ctx)
 
 	var got []Message
@@ -236,7 +265,7 @@ func TestSubscribeReconnectsWithSince(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client := newClient(config.Config{ServerURL: srv.URL, Topic: "alerts"}, 5*time.Millisecond)
+	client := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, 5*time.Millisecond)
 	msgs, errs := client.Subscribe(ctx)
 
 	var got []Message
@@ -306,7 +335,7 @@ func TestSubscribeAuth(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			cfg := config.Config{ServerURL: srv.URL, Topic: "alerts", User: c.user, Password: c.pass}
+			cfg := config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}, User: c.user, Password: c.pass}
 			// A long wait keeps the client on its first connection.
 			msgs, errs := newClient(cfg, time.Hour).Subscribe(ctx)
 			select {
@@ -347,7 +376,7 @@ func TestSubscribeReportsRejectedCredentials(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cfg := config.Config{ServerURL: srv.URL, Topic: "alerts", User: "andrea", Password: "s3cr3t"}
+	cfg := config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}, User: "andrea", Password: "s3cr3t"}
 	_, errs := newClient(cfg, 5*time.Millisecond).Subscribe(ctx)
 
 	select {
@@ -376,7 +405,7 @@ func TestSubscribeReportsServerErrors(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, errs := newClient(config.Config{ServerURL: srv.URL, Topic: "alerts"}, 5*time.Millisecond).Subscribe(ctx)
+	_, errs := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, 5*time.Millisecond).Subscribe(ctx)
 
 	select {
 	case err := <-errs:
@@ -398,7 +427,7 @@ func TestSubscribeStopsOnCancel(t *testing.T) {
 	defer srv.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	client := newClient(config.Config{ServerURL: srv.URL, Topic: "alerts"}, time.Hour)
+	client := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, time.Hour)
 	msgs, errs := client.Subscribe(ctx)
 
 	select {
@@ -431,7 +460,7 @@ func TestSubscribeStopsWhenTheCallerDoesNotRead(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Nobody reads the messages: the client must block on the send, not grow a
 	// queue, and it must exit when the context ends.
-	msgs, _ := newClient(config.Config{ServerURL: srv.URL, Topic: "alerts"}, time.Hour).Subscribe(ctx)
+	msgs, _ := newClient(config.Config{ServerURL: srv.URL, Topics: []string{"alerts"}}, time.Hour).Subscribe(ctx)
 	time.Sleep(50 * time.Millisecond)
 	cancel()
 
