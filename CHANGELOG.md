@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+## [0.3.0] - 2026-11-20
+
+### Added
+
+- Subscribe to several ntfy topics at once by writing them comma separated in `topic`, for example
+  `topic = "casa, pruebas"`. One connection delivers them all, each message keeps its own topic, and
+  `publish` asks which one to use when the configuration names more than one.
+
 ## [0.2.0] - 2026-11-20
 
 ### Added
@@ -126,5 +134,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 
 [0.1.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.1.0
 [0.2.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.2.0
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.2.0...HEAD
+[0.3.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.0
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.0...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1

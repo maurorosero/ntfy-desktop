@@ -8,7 +8,7 @@ ntfy has a web app, a mobile app and a CLI — but no desktop client for Linux. 
 client: it subscribes to a topic, shows what arrives as native notifications, lets you answer
 requests from a desktop dialog, and publishes messages back.
 
-**Status: pre-release (0.2.0).** The daemon subscribes, notifies, asks for decisions one at a time
+**Status: pre-release (0.3.0).** The daemon subscribes, notifies, asks for decisions one at a time
 and runs the chosen action; `publish` and `history` work from the terminal; the client installs as a
 user service that starts with the graphical session. Verified end to end on KDE Plasma 6.6.7
 (Wayland): a message published from another machine opened a dialog with three labelled buttons, the
@@ -86,8 +86,8 @@ sudo dnf install ntfy-desktop
 The `.deb` and `.rpm` files are also attached to each release, for a one-off install:
 
 ```sh
-sudo dpkg -i ntfy-desktop_0.2.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
-sudo rpm -i  ntfy-desktop-0.2.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
+sudo dpkg -i ntfy-desktop_0.3.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
+sudo rpm -i  ntfy-desktop-0.3.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
 ```
 
 From source, without root, everything goes to `~/.local`:
@@ -120,7 +120,7 @@ ntfy-desktop history [--unread]
 With no arguments it prints what it detects about the session and exits:
 
 ```sh
-ntfy-desktop 0.2.0
+ntfy-desktop 0.3.0
   user       mrosero
   locale     en
   desktop    kde
