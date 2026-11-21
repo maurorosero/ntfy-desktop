@@ -93,8 +93,9 @@ dpkg-query -W -f='${Version}\n' plasma-workspace
 write only to the paths it declares, and `~/.cache/ntfy-desktop` is one of them; if you changed the
 unit, keep it.
 
-Note that **the daemon does not write the history yet** — the store and the command are in place, and
-wiring them into the subscription is a separate task.
+The daemon writes that store: every message it receives lands there, and a message is marked read when
+you answer its decision or open its notification. Anything published while the daemon was stopped is
+recovered from the server on the next start, from the last id it remembers.
 
 ## A file of the history is broken
 

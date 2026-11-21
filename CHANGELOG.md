@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+## [0.3.2] - 2026-11-20
+
+### Added
+
+- The daemon keeps the local history: every message it receives is stored, and `ntfy-desktop history`
+  lists what arrived while nobody was looking. What was published while the daemon was stopped is
+  recovered from the server on the next start, and a message stops being unread once you answer its
+  decision or open the notification.
+
+### Changed
+
+- The package says what it cannot do: after installing or upgrading, the client running in the
+  graphical session keeps the previous binary, because a package cannot restart another person's user
+  service. `packaging/scripts/postinstall.sh` prints the two commands that fix it.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added
@@ -141,5 +156,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 [0.1.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.1.0
 [0.2.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.2.0
 [0.3.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.0
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.0...HEAD
+[0.3.2]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.2
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.2...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1

@@ -8,7 +8,7 @@ ntfy has a web app, a mobile app and a CLI — but no desktop client for Linux. 
 client: it subscribes to a topic, shows what arrives as native notifications, lets you answer
 requests from a desktop dialog, and publishes messages back.
 
-**Status: pre-release (0.3.0).** The daemon subscribes, notifies, asks for decisions one at a time
+**Status: pre-release (0.3.2).** The daemon subscribes, notifies, asks for decisions one at a time
 and runs the chosen action; `publish` and `history` work from the terminal; the client installs as a
 user service that starts with the graphical session. Verified end to end on KDE Plasma 6.6.7
 (Wayland): a message published from another machine opened a dialog with three labelled buttons, the
@@ -25,7 +25,8 @@ click called the endpoint in the message, and the endpoint received it. See the
   from the catalog, and the dialog wears the urgency of the message as its icon.
 - Publishes a message to a topic, with the body read from stdin and a title, priority, tags, click
   target and Markdown when they are asked for.
-- Keeps a local store for the messages received, listed by `ntfy-desktop history`.
+- Keeps a local store of the messages received, listed by `ntfy-desktop history`, and recovers what
+  arrived while the client was stopped.
 - Runs as a user service from the graphical session, so messages arrive without a terminal open.
 
 ## Platforms
@@ -83,11 +84,19 @@ sudo dnf config-manager --add-repo https://maurorosero.github.io/ntfy-desktop/rp
 sudo dnf install ntfy-desktop
 ```
 
+After an upgrade, restart the user service: `apt` replaces the binary, but the client running in
+your session keeps the previous one until it is restarted.
+
+```sh
+sudo apt update && sudo apt upgrade
+systemctl --user restart ntfy-desktop     # the package prints this reminder too
+```
+
 The `.deb` and `.rpm` files are also attached to each release, for a one-off install:
 
 ```sh
-sudo dpkg -i ntfy-desktop_0.3.0_linux_amd64.deb     # Debian, Ubuntu and derivatives
-sudo rpm -i  ntfy-desktop-0.3.0-1.x86_64.rpm        # Fedora, openSUSE and derivatives
+sudo dpkg -i ntfy-desktop_0.3.2_linux_amd64.deb     # Debian, Ubuntu and derivatives
+sudo rpm -i  ntfy-desktop-0.3.2-1.x86_64.rpm        # Fedora, openSUSE and derivatives
 ```
 
 From source, without root, everything goes to `~/.local`:
@@ -120,7 +129,7 @@ ntfy-desktop history [--unread]
 With no arguments it prints what it detects about the session and exits:
 
 ```sh
-ntfy-desktop 0.3.0
+ntfy-desktop 0.3.2
   user       mrosero
   locale     en
   desktop    kde
@@ -244,7 +253,7 @@ tools/                Go toolchain bootstrap, repo metadata and git hooks
 4. Resilience: reconnect, start with the session. — done
 5. Publish. — done
 6. History: store and `history` command. — done
-7. History wiring: the daemon records what arrives and marks what is answered. — open
+7. History wiring: the daemon records what arrives and marks what is answered. — done
 8. Portability: verify the GNOME adapter on a real session. — open
 9. Packaging: `.deb` and a release pipeline with signed binaries. — open
 

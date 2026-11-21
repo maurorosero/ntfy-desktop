@@ -73,9 +73,11 @@ compacted once it grows past that.
 A file that cannot be read is reported and replaced instead of stopping the program, so
 `rm -rf` on that directory is a safe way to start over.
 
-**The daemon does not write to the history yet.** The store and the command are in place; wiring
-`Add` and `MarkRead` into the subscription is tracked as its own task, so `history` shows what has
-been recorded by hand or by a later version.
+The daemon writes the history: every `message` event it receives is stored as it arrives — the
+`open` and `keepalive` events of the stream are not — and a message that was published while the
+program was not running is read back from the server on the next start, because the subscription
+resumes after the last id the store knows. A message stops being unread when the person answers its
+decision, and when the notification is clicked to open its link.
 
 ## Running with the session
 
@@ -92,6 +94,16 @@ systemctl --user status ntfy-desktop
 journalctl --user -u ntfy-desktop -f
 systemctl --user restart ntfy-desktop
 ```
+
+**After an upgrade, restart it.** A package cannot restart another person's user service, so the
+client keeps running the previous binary — from a file that no longer exists — until its owner does:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user restart ntfy-desktop
+```
+
+The package prints those two lines when it finishes installing.
 
 The unit declares `PartOf=graphical-session.target`, so it starts and stops with the session, and
 `Restart=on-failure` with `StartLimitBurst=5` per minute: a configuration that is broken fails five

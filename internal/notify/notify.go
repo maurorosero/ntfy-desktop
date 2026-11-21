@@ -68,6 +68,20 @@ type Notifier interface {
 	Show(ctx context.Context, m ntfy.Message) error
 }
 
+// Option configures the notifier while it is built. It is the way the caller
+// adds behaviour without widening Notifier.
+type Option func(*DBus)
+
+// WithClick makes the notifier report the message whose notification the
+// person opened, so the program can mark it as read.
+//
+// fn runs on its own goroutine, never on the bus one, and its failure is only
+// a logged line: the link still opens, because that is what the click asked
+// for. A nil fn is the same as not passing the option.
+func WithClick(fn func(ntfy.Message) error) Option {
+	return func(d *DBus) { d.click = fn }
+}
+
 // errBusy says the service has not answered the previous notification yet.
 var (
 	errBusy = errors.New("the notification service is still busy")
@@ -86,23 +100,31 @@ type opener interface {
 	Open(ctx context.Context, rawURL string) error
 }
 
+// target is what a click on a notification needs: the link the desktop opens
+// and the message it came from, so the history learns what was read.
+type target struct {
+	link    string
+	message ntfy.Message
+}
+
 // DBus shows messages through the freedesktop notification service of the
 // session bus. It keeps the link of every notification that carries one, so a
 // click can open it later.
 type DBus struct {
-	conn *dbus.Conn
-	svc  dbusnotify.Notifier // nil in the tests: nothing to close there
-	send sender
-	open opener // nil when the desktop has no tool to open links
-	log  *slog.Logger
-	tr   *i18n.Translator
+	conn  *dbus.Conn
+	svc   dbusnotify.Notifier // nil in the tests: nothing to close there
+	send  sender
+	open  opener // nil when the desktop has no tool to open links
+	click func(ntfy.Message) error
+	log   *slog.Logger
+	tr    *i18n.Translator
 
 	// sending holds at most one send: a service that stops answering costs one
 	// goroutine, not one per message.
 	sending chan struct{}
 
-	mu    sync.Mutex
-	links map[uint32]string
+	mu      sync.Mutex
+	targets map[uint32]target
 }
 
 // New connects to the session bus and subscribes to the signals of the
@@ -112,7 +134,7 @@ type DBus struct {
 // notifications. A bus without a notification service is not detectable here,
 // because the service is looked up on every call; Show reports it and the
 // program goes on.
-func New(log *slog.Logger, tr *i18n.Translator) (*DBus, error) {
+func New(log *slog.Logger, tr *i18n.Translator, opts ...Option) (*DBus, error) {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -130,7 +152,12 @@ func New(log *slog.Logger, tr *i18n.Translator) (*DBus, error) {
 		log:     log,
 		tr:      tr,
 		sending: make(chan struct{}, 1),
-		links:   make(map[uint32]string),
+		targets: make(map[uint32]target),
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(d)
+		}
 	}
 	svc, err := dbusnotify.New(conn,
 		dbusnotify.WithLogger(busLogger{log: log}),
@@ -183,7 +210,7 @@ func (d *DBus) Show(ctx context.Context, m ntfy.Message) error {
 		return fmt.Errorf("showing the notification of %q: %w", m.ID, err)
 	}
 	if link != "" {
-		d.remember(id, link)
+		d.remember(id, target{link: link, message: m})
 	}
 	return nil
 }
@@ -244,11 +271,23 @@ func (d *DBus) actionInvoked(sig *dbusnotify.ActionInvokedSignal) {
 	if sig == nil || sig.ActionKey != actionOpen {
 		return
 	}
-	link := d.take(sig.ID)
-	if link == "" {
+	t, ok := d.take(sig.ID)
+	if !ok {
 		return
 	}
-	go d.openLink(link)
+	go d.opened(t)
+}
+
+// opened is the click: the message is reported as read and its link is handed
+// to the desktop. It runs off the bus goroutine, because both steps may wait
+// on a file or on a browser.
+func (d *DBus) opened(t target) {
+	if d.click != nil {
+		if err := d.click(t.message); err != nil {
+			d.log.Warn("marking the clicked message as read", "message", t.message.ID, "error", err)
+		}
+	}
+	d.openLink(t.link)
 }
 
 // openLink hands the link to the desktop and reports what went wrong.
@@ -271,33 +310,34 @@ func (d *DBus) closed(sig *dbusnotify.NotificationClosedSignal) {
 	d.forget(sig.ID)
 }
 
-// remember stores the link of a notification so a click can open it.
-func (d *DBus) remember(id uint32, link string) {
+// remember stores what a click of the notification needs, so it can open the
+// link and report the message later.
+func (d *DBus) remember(id uint32, t target) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if len(d.links) >= maxTrackedLinks {
+	if len(d.targets) >= maxTrackedLinks {
 		// Losing the older links only means their click does nothing, which is
 		// better than a map that never stops growing.
-		d.links = make(map[uint32]string, maxTrackedLinks)
+		d.targets = make(map[uint32]target, maxTrackedLinks)
 	}
-	d.links[id] = link
+	d.targets[id] = t
 }
 
-// take returns the link of a notification and forgets it: one notification,
+// take returns what the notification needs and forgets it: one notification,
 // one click.
-func (d *DBus) take(id uint32) string {
+func (d *DBus) take(id uint32) (target, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	link := d.links[id]
-	delete(d.links, id)
-	return link
+	t, ok := d.targets[id]
+	delete(d.targets, id)
+	return t, ok
 }
 
 // forget drops the link of a notification that is no longer on screen.
 func (d *DBus) forget(id uint32) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	delete(d.links, id)
+	delete(d.targets, id)
 }
 
 // findOpener looks for the tool the desktop uses to open a URL. Without it the

@@ -33,20 +33,37 @@ const (
 
 // Client subscribes to the topic of one configuration.
 type Client struct {
-	cfg  config.Config
-	http *http.Client
-	base time.Duration // first wait between retries; New sets initialWait
+	cfg   config.Config
+	http  *http.Client
+	base  time.Duration // first wait between retries; New sets initialWait
+	since string        // where the first connection resumes from; empty is the live stream
+}
+
+// Option configures the client while it is built.
+type Option func(*Client)
+
+// WithSince makes the first connection resume after the message id, so what
+// arrived while the program was not running is read back from the server. The
+// id normally comes from the local history.
+//
+// The server keeps its cache for a limited time, so the id may be one it no
+// longer holds. A first attempt refused because of it (a 400 or a 404) is
+// answered by subscribing to the live stream instead: asking for the same
+// missing message on every retry would leave the client deaf for good.
+func WithSince(id string) Option {
+	id = strings.TrimSpace(id)
+	return func(c *Client) { c.since = id }
 }
 
 // New builds the client for a configuration that config.Load already validated.
-func New(cfg config.Config) *Client {
-	return newClient(cfg, initialWait)
+func New(cfg config.Config, opts ...Option) *Client {
+	return newClient(cfg, initialWait, opts...)
 }
 
 // newClient exists so the tests can shrink the wait between retries: a test
 // that reconnects must not sleep a second, and the policy is the same.
-func newClient(cfg config.Config, base time.Duration) *Client {
-	return &Client{
+func newClient(cfg config.Config, base time.Duration, opts ...Option) *Client {
+	c := &Client{
 		cfg:  cfg,
 		base: base,
 		http: &http.Client{
@@ -62,6 +79,12 @@ func newClient(cfg config.Config, base time.Duration) *Client {
 			},
 		},
 	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(c)
+		}
+	}
+	return c
 }
 
 // Subscribe opens the stream and returns the events and the reasons of the
@@ -83,7 +106,11 @@ func (c *Client) Subscribe(ctx context.Context) (<-chan Message, <-chan error) {
 // run is the loop: subscribe, report what went wrong, wait, subscribe again
 // asking for everything after the last message seen.
 func (c *Client) run(ctx context.Context, msgs chan<- Message, errs chan<- error) {
-	var since string
+	since := c.since
+	// fromHistory marks the since as the caller's. Only that one is dropped
+	// when the server refuses it: an id seen on this very connection is one
+	// the cache is holding right now.
+	fromHistory := since != ""
 	attempt := 0
 	for {
 		last, healthy, err := c.stream(ctx, since, msgs)
@@ -97,7 +124,11 @@ func (c *Client) run(ctx context.Context, msgs chan<- Message, errs chan<- error
 			if !emit(ctx, errs, err) {
 				return
 			}
+			if fromHistory && refusedSince(err) {
+				since, fromHistory = "", false
+			}
 		}
+		fromHistory = false
 		if ctx.Err() != nil {
 			return
 		}
@@ -202,6 +233,17 @@ func escapedTopics(topics []string) string {
 type StatusError struct {
 	Code   int
 	Status string // as the server wrote it, e.g. "401 Unauthorized"
+}
+
+// refusedSince reports whether the answer is the server rejecting the resume
+// point rather than being unreachable: a cache that no longer holds the id
+// answers a bad request or a not found.
+func refusedSince(err error) bool {
+	var status *StatusError
+	if !errors.As(err, &status) {
+		return false
+	}
+	return status.Code == http.StatusBadRequest || status.Code == http.StatusNotFound
 }
 
 func (e *StatusError) Error() string {
