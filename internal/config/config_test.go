@@ -397,3 +397,81 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+// TestCheckServer is the rule of the loader on its own, which is what a front
+// end that asks for the URL one field at a time calls.
+func TestCheckServer(t *testing.T) {
+	cases := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr string
+	}{
+		{name: "https", in: "https://ntfy.sh", want: "https://ntfy.sh"},
+		{name: "http with a port", in: "http://10.0.0.5:2586", want: "http://10.0.0.5:2586"},
+		{name: "a trailing slash is trimmed", in: "https://ntfy.sh/", want: "https://ntfy.sh"},
+		{name: "two trailing slashes", in: "https://ntfy.sh//", want: "https://ntfy.sh"},
+		{name: "a path prefix is kept", in: "https://example.org/ntfy", want: "https://example.org/ntfy"},
+		{name: "empty", in: "", wantErr: "must not be empty"},
+		{name: "only slashes", in: "///", wantErr: "must not be empty"},
+		{name: "ftp", in: "ftp://ntfy.sh", wantErr: "must be an http or https URL"},
+		{name: "no scheme", in: "ntfy.sh", wantErr: "must be an http or https URL"},
+		{name: "no host", in: "https://", wantErr: "must be an http or https URL"},
+		{name: "a query", in: "https://ntfy.sh?x=1", wantErr: "must not have a query or a fragment"},
+		{name: "a fragment", in: "https://ntfy.sh#top", wantErr: "must not have a query or a fragment"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := CheckServer(c.in)
+			if c.wantErr != "" {
+				if err == nil {
+					t.Fatalf("CheckServer(%q) = %q; want an error", c.in, got)
+				}
+				if !strings.Contains(err.Error(), c.wantErr) {
+					t.Errorf("CheckServer(%q) = %v; want %q in it", c.in, err, c.wantErr)
+				}
+				if got != "" {
+					t.Errorf("CheckServer(%q) = %q; want \"\" with an error", c.in, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("CheckServer(%q) = error %v; want no error", c.in, err)
+			}
+			if got != c.want {
+				t.Errorf("CheckServer(%q) = %q; want %q", c.in, got, c.want)
+			}
+		})
+	}
+}
+
+func TestCheckTopic(t *testing.T) {
+	cases := []struct {
+		name    string
+		in      string
+		wantErr bool
+	}{
+		{name: "a name", in: "casa"},
+		{name: "dashes and underscores", in: "a_b-1"},
+		{name: "64 characters", in: strings.Repeat("a", 64)},
+		{name: "empty", in: "", wantErr: true},
+		{name: "65 characters", in: strings.Repeat("a", 65), wantErr: true},
+		{name: "a space", in: "mis avisos", wantErr: true},
+		{name: "a comma", in: "casa,avisos", wantErr: true},
+		{name: "a slash", in: "casa/avisos", wantErr: true},
+		{name: "a newline", in: "casa\n", wantErr: true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := CheckTopic(c.in)
+			if c.wantErr && err == nil {
+				t.Fatalf("CheckTopic(%q) = nil; want an error", c.in)
+			}
+			if !c.wantErr && err != nil {
+				t.Fatalf("CheckTopic(%q) = %v; want no error", c.in, err)
+			}
+		})
+	}
+}

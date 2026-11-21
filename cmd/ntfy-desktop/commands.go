@@ -35,6 +35,8 @@ const (
 	commandPublish command = "publish"
 	// commandHistory lists the messages kept in the local history.
 	commandHistory command = "history"
+	// commandConfig shows, verifies and edits the configuration.
+	commandConfig command = "config"
 )
 
 // errUsage reports a command line that was already explained on stderr by the
@@ -51,6 +53,7 @@ type options struct {
 	level    slog.Level     // level of the logger
 	levelSet bool           // the flag carried the level, so it wins over the file
 	publish  publishOptions // flags of the publish command
+	config   configOptions  // flags of the config command
 	unread   bool           // history lists only what has not been read
 }
 
@@ -78,6 +81,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return runPublish(ctx, opts, tr, os.Stdin, stdout, stderr)
 	case commandHistory:
 		return runHistory(opts, tr, stdout, stderr)
+	case commandConfig:
+		return runConfig(ctx, opts, tr, os.Stdin, stdout, stderr)
 	case commandVersion:
 		fmt.Fprintf(stdout, "ntfy-desktop %s\n", version.Version)
 		return 0
@@ -97,6 +102,12 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 	if rest, ok := splitPublish(args); ok {
 		opts.command, opts.explicit = commandPublish, true
 		return opts, opts.parsePublish(rest, tr, stderr)
+	}
+	// config has three forms of its own, so it parses its command line the same
+	// way publish does.
+	if rest, ok := splitConfig(args); ok {
+		opts.command, opts.explicit = commandConfig, true
+		return opts, opts.parseConfig(rest, tr, stderr)
 	}
 
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
@@ -170,7 +181,7 @@ func parse(args []string, tr *i18n.Translator, stderr io.Writer) (options, error
 // with `--version` is a mistake worth reporting, not something to guess about.
 func (o *options) choose(c command, tr *i18n.Translator) error {
 	switch c {
-	case commandEnv, commandDaemon, commandVersion, commandHistory:
+	case commandEnv, commandDaemon, commandVersion, commandHistory, commandConfig:
 	default:
 		return fmt.Errorf(tr.T("unknown command %q"), string(c))
 	}

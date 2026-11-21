@@ -124,6 +124,7 @@ ntfy-desktop --version              # version and commit
 ntfy-desktop --daemon               # subscribes until it is stopped
 ntfy-desktop publish [topic]        # body from stdin
 ntfy-desktop history [--unread]
+ntfy-desktop config                 # the wizard: server, credentials, topics
 ```
 
 With no arguments it prints what it detects about the session and exits:
@@ -189,6 +190,12 @@ destination is passed as an argument or with `--topic`.
 Leave `user` and `password` out to subscribe to a public topic; set both to use HTTP Basic on a
 protected one. Half a pair is a configuration error, not an anonymous subscription. Any other key is
 an error too, so a typo is never silently ignored.
+
+The file can be written and checked from the terminal instead of by hand: `ntfy-desktop config`
+asks for the server, the credentials and the topics and writes only what you confirm, `--check`
+verifies file, server, credentials and every topic and exits with a code that says what failed,
+and `--set` or `config topic --add/--remove` change one thing at a time. The password never travels
+as an argument.
 
 Full reference, with what is refused and why: [docs/configuration.md](docs/configuration.md).
 
