@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/maurorosero/ntfy-desktop/internal/action"
@@ -44,7 +45,7 @@ func runDaemon(ctx context.Context, opts options, env platform.Env, tr *i18n.Tra
 	log := newLogger(stderr, level)
 
 	log.Info("subscribing",
-		"config", path, "server", cfg.ServerURL, "topic", cfg.Topic,
+		"config", path, "server", cfg.ServerURL, "topics", strings.Join(cfg.Topics, ","),
 		"auth", cfg.AuthMode().String(), "log_level", level.String())
 
 	serve(ctx, log, tr, env, *cfg)

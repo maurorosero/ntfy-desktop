@@ -297,6 +297,66 @@ func TestRunPublishUsesTheConfiguredTopic(t *testing.T) {
 	}
 }
 
+// TestRunPublishRefusesSeveralTopics covers the third acceptance criterion:
+// the configuration names two topics and nobody said which one, so the command
+// stops with the way to choose instead of publishing to the first one.
+func TestRunPublishRefusesSeveralTopics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("the server saw %s; want no publish at all", r.URL.Path)
+		io.WriteString(w, `{"id":"x1","event":"message","topic":"casa"}`)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	writeTestConfig(t, dir, srv.URL, "casa, pruebas-multi", "", "")
+	withStdin(t, "hola\n")
+
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), []string{"publish"}, &out, &errOut); code != 1 {
+		t.Fatalf("run(publish) = %d; want 1. stderr: %s", code, errOut.String())
+	}
+	got := errOut.String()
+	for _, want := range []string{"several topics", "--topic"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("stderr = %q; want %q in it", got, want)
+		}
+	}
+}
+
+// TestRunPublishChoosesAmongSeveralTopics is the other half: with the choice
+// made on the command line, the same configuration publishes without asking.
+func TestRunPublishChoosesAmongSeveralTopics(t *testing.T) {
+	paths := make(chan string, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case paths <- r.URL.Path:
+		default:
+		}
+		io.WriteString(w, `{"id":"x1","event":"message","topic":"pruebas-multi"}`)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	writeTestConfig(t, dir, srv.URL, "casa, pruebas-multi", "", "")
+	withStdin(t, "hola\n")
+
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), []string{"publish", "pruebas-multi"}, &out, &errOut); code != 0 {
+		t.Fatalf("run(publish pruebas-multi) = %d; want 0. stderr: %s", code, errOut.String())
+	}
+
+	select {
+	case got := <-paths:
+		if want := "/pruebas-multi"; got != want {
+			t.Errorf("path = %q; want %q", got, want)
+		}
+	default:
+		t.Fatal("the server did not see the publish request")
+	}
+}
+
 // TestRunPublishReportsAForbiddenTopic is the second acceptance criterion: a
 // 403 says what to look at, and never what the password is.
 func TestRunPublishReportsAForbiddenTopic(t *testing.T) {

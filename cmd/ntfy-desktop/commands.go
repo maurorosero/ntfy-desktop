@@ -227,7 +227,7 @@ func reportConfigError(log *slog.Logger, tr *i18n.Translator, path string, err e
 	var invalid *config.ValidationError
 	if errors.As(err, &invalid) {
 		log.Error("the configuration is not usable",
-			"path", path, "key", invalid.Field, "reason", tr.T(invalid.Msg))
+			"path", path, "key", invalid.Field, "reason", tr.T(invalid.Msg, invalid.Args...))
 		return
 	}
 	var syntax *config.SyntaxError
