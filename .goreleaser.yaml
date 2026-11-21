@@ -60,6 +60,10 @@ nfpms:
     recommends:
       - kdialog
       - zenity
+    # El único paso que el paquete no puede hacer solo: reiniciar el servicio de
+    # la sesión gráfica. El script lo dice en vez de dejarlo en silencio.
+    scripts:
+      postinstall: packaging/scripts/postinstall.sh
     contents:
       - src: packaging/ntfy-desktop.desktop
         dst: /usr/share/applications/ntfy-desktop.desktop

@@ -83,6 +83,14 @@ sudo dnf config-manager --add-repo https://maurorosero.github.io/ntfy-desktop/rp
 sudo dnf install ntfy-desktop
 ```
 
+After an upgrade, restart the user service: `apt` replaces the binary, but the client running in
+your session keeps the previous one until it is restarted.
+
+```sh
+sudo apt update && sudo apt upgrade
+systemctl --user restart ntfy-desktop     # the package prints this reminder too
+```
+
 The `.deb` and `.rpm` files are also attached to each release, for a one-off install:
 
 ```sh

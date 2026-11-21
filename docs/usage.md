@@ -93,6 +93,16 @@ journalctl --user -u ntfy-desktop -f
 systemctl --user restart ntfy-desktop
 ```
 
+**After an upgrade, restart it.** A package cannot restart another person's user service, so the
+client keeps running the previous binary — from a file that no longer exists — until its owner does:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user restart ntfy-desktop
+```
+
+The package prints those two lines when it finishes installing.
+
 The unit declares `PartOf=graphical-session.target`, so it starts and stops with the session, and
 `Restart=on-failure` with `StartLimitBurst=5` per minute: a configuration that is broken fails five
 times and stops, instead of filling the journal forever.
