@@ -252,7 +252,7 @@ tools/                Go toolchain bootstrap, repo metadata and git hooks
 4. Resilience: reconnect, start with the session. — done
 5. Publish. — done
 6. History: store and `history` command. — done
-7. History wiring: the daemon records what arrives and marks what is answered. — open
+7. History wiring: the daemon records what arrives and marks what is answered. — done
 8. Portability: verify the GNOME adapter on a real session. — open
 9. Packaging: `.deb` and a release pipeline with signed binaries. — open
 
