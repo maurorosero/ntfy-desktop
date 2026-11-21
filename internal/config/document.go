@@ -51,6 +51,34 @@ func (d *Document) Bytes() []byte {
 	return []byte(text)
 }
 
+// Masked returns the text of the document with the value of the password key
+// replaced by placeholder, so a front end can show the whole file without the
+// secret. The rest of that line —the indentation and the comment behind the
+// value— and every other line stay exactly as they are.
+func (d *Document) Masked(placeholder string) []byte {
+	index, ok := d.keyLine(keyPassword)
+	if !ok {
+		return d.Bytes()
+	}
+	raw := d.lines[index]
+	equal := strings.IndexByte(raw, '=')
+	if equal < 0 {
+		return d.Bytes()
+	}
+	open := strings.IndexByte(raw[equal:], '"')
+	if open < 0 {
+		return d.Bytes()
+	}
+	open += equal
+	close, ok := closingQuote(raw, open)
+	if !ok {
+		return d.Bytes()
+	}
+	masked := d.clone()
+	masked.lines[index] = raw[:open+1] + placeholder + raw[close:]
+	return masked.Bytes()
+}
+
 // Check parses and validates the document with the same loader that reads the
 // file from disk. When the loader rejects a value, the error names the line
 // the key sits on as well as the key.

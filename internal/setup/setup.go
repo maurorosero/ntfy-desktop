@@ -48,6 +48,11 @@ func (d *Draft) Path() string { return d.path }
 // it and ask before anything touches the disk.
 func (d *Draft) Text() []byte { return d.doc.Bytes() }
 
+// Masked returns the candidate as it would be written with the password
+// replaced by placeholder: what a front end shows of a file that holds a
+// secret.
+func (d *Draft) Masked(placeholder string) []byte { return d.doc.Masked(placeholder) }
+
 // Config returns the configuration the draft holds, validated by the loader.
 func (d *Draft) Config() (*config.Config, error) { return d.doc.Check() }
 

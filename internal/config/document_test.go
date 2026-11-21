@@ -449,3 +449,46 @@ func TestCatalogCoversTheEdits(t *testing.T) {
 		})
 	}
 }
+
+// TestMasked covers what the summary of the wizard shows: the file as it will
+// be written, with the password replaced and everything else untouched.
+func TestMasked(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "the password and its comment",
+			in:   "server = \"https://ntfy.sh\"\nuser = \"andrea\"\npassword = \"s3cr3t\"  # la de casa\n",
+			want: "password = \"••••\"  # la de casa",
+		},
+		{
+			name: "no credentials at all",
+			in:   "server = \"https://ntfy.sh\"\ntopic = \"casa\"\n",
+			want: "topic = \"casa\"",
+		},
+		{
+			name: "an escaped quote in the value",
+			in:   "password = \"a\\\"b\"\nuser = \"andrea\"\nserver = \"https://ntfy.sh\"\ntopic = \"casa\"\n",
+			want: "password = \"••••\"",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			doc := NewDocument([]byte(c.in))
+			got := string(doc.Masked("••••"))
+			if !strings.Contains(got, c.want) {
+				t.Errorf("Masked() = %q; want %q in it", got, c.want)
+			}
+			if strings.Contains(got, "s3cr3t") || strings.Contains(got, `a\"b`) {
+				t.Errorf("Masked() = %q; it exposes the password", got)
+			}
+			// The mask is a view: the document keeps its value for the write.
+			if string(doc.Bytes()) != c.in {
+				t.Errorf("Masked() changed the document: %q; want %q", doc.Bytes(), c.in)
+			}
+		})
+	}
+}
