@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   graphical session keeps the previous binary, because a package cannot restart another person's user
   service. `packaging/scripts/postinstall.sh` prints the two commands that fix it.
 
+### Fixed
+
+- The release did not hand its packages to the apt repository: the workflow token lacked the
+  permission to start another workflow, so the step answered 403. The release workflow now carries
+  `actions: write`, and a tag reaches `apt` without anyone asking by hand.
+
+
 ## [0.3.0] - 2026-11-20
 
 ### Added

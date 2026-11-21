@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: write
+  # gh workflow run necesita esto: sin él, el pedido al repositorio da 403
+  actions: write
 
 concurrency:
   group: release-${{ github.ref }}
