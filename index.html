@@ -21,3 +21,5 @@ sudo dnf install ntfy-desktop
 
 - `ntfy-desktop_0.2.0_linux_amd64.deb`
 - `ntfy-desktop_0.2.0_linux_arm64.deb`
+- `ntfy-desktop_0.3.0_linux_amd64.deb`
+- `ntfy-desktop_0.3.0_linux_arm64.deb`
