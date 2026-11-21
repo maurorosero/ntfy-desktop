@@ -253,3 +253,20 @@ msgstr ""
 
 #: cmd/ntfy-desktop/history.go
 msgid "(no title)"
+msgstr ""
+
+#: internal/config/document.go
+msgid "cannot remove the only topic"
+msgstr ""
+
+#: internal/config/document.go
+msgid "%q is already in the topic list"
+msgstr ""
+
+#: internal/config/document.go
+msgid "%q is not in the topic list"
+msgstr ""
+
+#: internal/config/document.go
+msgid "expected a quoted value on this line"
+msgstr ""
