@@ -129,6 +129,9 @@ Detalles que hacen la diferencia:
 - **`--gui` sin `kdialog` (o en GNOME)** cae a `zenity` con los mismos pasos; si no hay ninguno de los
   dos, cae al modo texto y lo dice. No falla.
 
+La referencia visual es `plan/configuracion-ui.png` (mockup de cuatro de las cinco pantallas) y el
+brief para quien implemente el frente gráfico está en `plan/configuracion-ui.md`.
+
 ## 6. Piezas nuevas
 
 | Pieza | Responsabilidad | Por qué un paquete |
