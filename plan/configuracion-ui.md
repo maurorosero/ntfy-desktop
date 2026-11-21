@@ -96,6 +96,24 @@ La imagen muestra cuatro de las cinco (la 2, credenciales, se omite por ser la m
 - **Sin `kdialog` ni `zenity`:** el frente gráfico no falla; cae al modo texto y lo dice en una línea.
 - **Nunca pasar la contraseña por argv.** Ni `--password=…`, ni un `echo` en un `sh -c`.
 
+### Etiquetas de los botones: qué permite cada herramienta (medido)
+
+Probado el 2026-11-21 con `kdialog` 25.12.3 (Plasma 6.6.7) y `zenity` 4.1.90, mirando la pantalla:
+
+| Herramienta y clase | ¿Respeta las etiquetas propias? | Medición |
+|---|---|---|
+| `kdialog` · `--inputbox` | **no** | `--ok-label "ZZZ"` → el botón dice «Aceptar» |
+| `kdialog` · `--password` | **no** | igual que `--inputbox` |
+| `kdialog` · `--checklist` | **no** | `--ok-label "Continuar"` → «Aceptar» |
+| `kdialog` · `--yesno` | **sí** | `--yes-label "Aprobar" --no-label "Rechazar"` → esos textos |
+| `kdialog` · `--button` | no existe | `kdialog: Opciones desconocidas: button` |
+| `zenity` · `--entry` | **sí** | `--ok-label "ZZZ" --cancel-label "YYY"` → «ZZZ» y «YYY» |
+
+Consecuencia para el diseño: en Plasma, los pasos con campo de texto llevan los botones
+nativos del sistema, traducidos por Qt («Aceptar» / «Cancelar»), no los del catálogo; en XFCE
+y GNOME, con `zenity`, sí se pueden poner las etiquetas del catálogo. Un KCM o una ventana
+propia resolverían la diferencia, y están descartados por §10 de `plan/alcance.md`.
+
 ## 6. Lo que no se hace
 
 - No es un KCM de KDE ni usa Qt/GTK: un panel del sistema exigiría Qt/C++ y choca con
@@ -114,3 +132,5 @@ La imagen muestra cuatro de las cinco (la 2, credenciales, se omite por ser la m
 - Con el servidor caído, el resumen advierte y «Escribir» sigue disponible.
 - Sin `kdialog` ni `zenity`, `--gui` arranca el modo texto.
 - Todas las cadenas salen del catálogo: `locales/ntfy-desktop.pot` y `locales/es/…` actualizados.
+  La excepción medida son los botones de `kdialog` en `--inputbox`, `--password` y `--checklist`, que
+  los pone el sistema (§5); ahí se acepta «Aceptar»/«Cancelar» traducido por Qt.
