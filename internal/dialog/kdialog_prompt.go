@@ -44,6 +44,13 @@ func (k *KDialogPrompt) Step(n, total int, name string) { k.h.set(n, total, name
 
 // Line implements Prompter with --inputbox, which keeps current as the value
 // the person starts from.
+//
+// kdialog 25.12 ignores --ok-label and --cancel-label here and in Secret and
+// Topics: it draws the text of its own buttons, translated by Qt. Measured with
+// `--ok-label "ZZZ" --cancel-label "YYY"`, which came out as "Accept"/"Cancel";
+// --button, the usual way to name buttons, answers "unknown option". The labels
+// are kept anyway because they cost nothing and a later kdialog may read them.
+// --yesno is the one class that honours them, through --yes-label/--no-label.
 func (k *KDialogPrompt) Line(ctx context.Context, question, current string) (string, error) {
 	args := []string{"--title", k.h.title(), "--ok-label", k.tr.T("Continue"), "--cancel-label", k.tr.T("Cancel"),
 		"--inputbox", esc(question)}
