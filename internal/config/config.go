@@ -138,11 +138,11 @@ func DefaultPath() (string, error) {
 // file keeps fs.ErrNotExist wrapped, so the caller can tell it apart and
 // explain where the file goes.
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	doc, err := LoadDocument(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", path, err)
+		return nil, err
 	}
-	cfg, err := parse(data)
+	cfg, err := doc.Check()
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
