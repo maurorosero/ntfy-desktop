@@ -121,15 +121,15 @@ it without echoing it (`stty`), and `--password-stdin` reads it from the standar
 |---|---|
 | 0 | everything verified |
 | 1 | nothing was written: the wizard was cancelled |
-| 2 | the file cannot be read, or it is not valid |
+| 2 | the file cannot be read, or the change would leave it invalid |
 | 3 | the server does not answer, or it is not an ntfy server |
 | 4 | the server rejected the credentials (401) |
 | 5 | the credentials have no permission for a topic (403) |
 
 The wizard and the commands that edit one key use the same numbers for the same failures, with one
 deliberate difference: a server that does not answer does not stop them. They save the file with a
-warning, because a configuration can be written before the server is reachable (decision of
-`plan/configuracion.md` §8). A refusal — not ntfy, 401, 403 — blocks and leaves the file untouched.
+warning, because a configuration can be written before the server is reachable. A refusal — not ntfy,
+401, 403 — blocks and leaves the file untouched.
 
 `--check` makes one request to `/v1/health`, one to `/v1/account` and opens one stream per topic,
 cutting it on its first event: it reads no message and publishes nothing. A server without
@@ -156,6 +156,20 @@ Every error names the key and the reason, so the journal line is enough to fix i
 level=ERROR msg="the configuration is not usable" path=/home/mrosero/.config/ntfy-desktop/config.toml
   key=password reason="requires a password"
 ```
+
+## What it does not do, and why
+
+- **One server, many topics.** There are no profiles: a second server is a second config file, and the
+  program reads one. The product is a client of a subscription, not a manager of accounts.
+- **The password lives in the file**, with `0600` and nothing else. A keyring would add another
+  dependency and another way to fail before the first message arrives; it is a later step, not a
+  condition for this one.
+- **It does not administer ntfy.** Users, roles and the ACL are `ntfy user` and `ntfy access`, on the
+  server. The client can only report what the server answers: a 401 is the credentials, a 403 is the
+  permission for that topic.
+- **It does not verify that a topic "exists"**, because in ntfy a topic exists once something is
+  published: an empty one answers exactly like a used one. It verifies the permission to read, not the
+  existence.
 
 ## Where the code lives
 
