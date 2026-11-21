@@ -1,14 +1,14 @@
 Package: ntfy-desktop
-Version: 0.3.2
+Version: 0.3.5
 Architecture: arm64
 Maintainer: Mauro Rosero <mauro@rosero.one>
-Installed-Size: 7543
+Installed-Size: 7744
 Recommends: kdialog, zenity
-Filename: pool/main/n/ntfy-desktop/ntfy-desktop_0.3.2_linux_arm64.deb
-Size: 3226310
-MD5sum: 589849dcd69c574bce3bd1ced2163c42
-SHA1: 2d5494085863e08175cf39f7ef62c252dc5f550e
-SHA256: 114aa2672e5fc97e93aa7b486504d15b51607a21d9c6ab352cfda102f53ef4a2
+Filename: pool/main/n/ntfy-desktop/ntfy-desktop_0.3.5_linux_arm64.deb
+Size: 3299974
+MD5sum: 9dcdd85c63d7628166c1edd31bd00d0c
+SHA1: 5fd1d20ab89b0ba426b071f96445f7be5e224113
+SHA256: 683299ec552d7f075129f6803fc33449b01ac24085ee3e2f06e7d9a0a3d0dc50
 Section: utils
 Priority: optional
 Homepage: https://github.com/maurorosero/ntfy-desktop
