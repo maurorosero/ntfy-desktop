@@ -3,6 +3,10 @@
 # El toolchain vive en .toolchain/go: no hace falta Go instalado en el sistema.
 
 GO      ?= $(CURDIR)/.toolchain/go/bin/go
+# Los módulos viven con el proyecto, igual que el toolchain: así ~/go no aparece
+# y `rm -rf .toolchain` limpia todo junto. .gitignore ya cubre .toolchain/.
+GOMODCACHE ?= $(CURDIR)/.toolchain/modcache
+export GOMODCACHE
 BINARIO ?= bin/ntfy-desktop
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X github.com/maurorosero/ntfy-desktop/internal/version.Version=$(VERSION)
