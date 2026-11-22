@@ -38,7 +38,7 @@ puede actuar sobre él sin salir de donde está.
 
 | Entorno | Estado | Cómo |
 |---|---|---|
-| KDE Plasma y derivadas (Kubuntu, KDE neon) | **alcance actual** | `kdialog` para diálogos, `notify-send` para avisos |
+| KDE Plasma y derivadas (Kubuntu, KDE neon) | **alcance actual** | `kdialog` para diálogos, D-Bus para avisos |
 | GNOME y derivadas (Ubuntu, Fedora Workstation) | **capa lista, sin implementar** | `zenity` para diálogos; falta máquina de prueba |
 | Otros (XFCE, Cinnamon, Sway) | fuera de alcance | — |
 
@@ -136,7 +136,7 @@ La columna Estado define qué entra en cada hito.
 | Acción `view`: abrir una URL | **núcleo** |
 | Acción `http`: llamar una URL (aprobar/rechazar) | **núcleo** |
 | Caducidad de una petición de decisión | **núcleo** |
-| Responder publicando en un topic de respuesta | evaluable (§11) |
+| Respuesta de una decisión | **núcleo**: por la acción `http`; publicar en un topic de respuesta no se implementa |
 | Acción `broadcast`: reenviar a otros dispositivos | después |
 | `inline-reply`: responder texto desde el aviso | evaluable (no funciona en Plasma) |
 
@@ -155,7 +155,8 @@ La columna Estado define qué entra en cada hito.
 
 | Función | Estado |
 |---|---|
-| Configuración: servidor, topic, credenciales | **núcleo** |
+| Configuración: servidor, topic, credenciales | **núcleo**: archivo, subcomando `config` y asistente gráfico |
+| Lectura en voz alta de los avisos, por modo y por tag `tts` | siguiente (`plan/tts.md`) |
 | Registro de diagnóstico con nivel configurable (`log-level`, `--log-level`) | **núcleo** |
 | Arranque con la sesión (servicio de usuario) y cierre limpio con `SIGTERM` | **núcleo** |
 | Ajustes por topic: silenciar, prioridad mínima | siguiente |
@@ -202,7 +203,7 @@ Probados en el escritorio de referencia (Kubuntu, Plasma 6.6.7, Wayland):
       └─────┬─────────────┘
        KDE  │  GNOME
     kdialog │  zenity
- notify-send│ notify-send
+      D-Bus │  D-Bus
 ```
 
 El núcleo no sabe qué escritorio hay. El adaptador se elige una vez al arrancar y expone tres
@@ -255,12 +256,13 @@ Decidido. Motivos, en orden:
 
 1. **Distribución**: binario único, sin intérprete ni runtime que instalar.
 2. **Dependencias mínimas**: `net/http` y `encoding/json` cubren el transporte; `kdialog`,
-   `zenity` y `notify-send` se ejecutan por `os/exec`. La única dependencia externa es
-   `gotext` (MIT, Go puro) para los catálogos de idioma. Sin cgo.
+   `zenity` y `xdg-open` se ejecutan por `os/exec`. Las dependencias externas son `gotext`
+   (MIT) para los catálogos de idioma y `godbus`/`notify` (BSD) para las notificaciones por
+   D-Bus. Sin cgo.
 3. **Arranque rápido**: el cliente vive en la sesión y debe estar listo al iniciar.
-4. **El precio, dicho de frente**: la bandeja del sistema va por D-Bus (StatusNotifierItem) y
-   ahí sí hará falta una librería. Es el único punto donde Go deja de ser cero-dependencias, y
-   está en el hito que agrega la bandeja, no antes.
+4. **El precio, dicho de frente**: las notificaciones ya van por D-Bus con `godbus`/`notify`, y
+   la bandeja del sistema (StatusNotifierItem) necesitará otra librería. Es el punto donde el
+   proyecto deja de ser cero-dependencias, y la bandeja está en su propio hito, no antes.
 
 ## 10. Decisiones tomadas
 
@@ -268,7 +270,7 @@ Decidido. Motivos, en orden:
 |---|---|
 | Transporte: **ntfy**, URL del servidor por configuración | protocolo abierto; cualquier instancia |
 | Topic y credenciales: **por configuración** | el producto no conoce ninguna instalación |
-| Aviso: **`notify-send`** con timeout explícito | no roba el foco; cero dependencias |
+| Aviso: **D-Bus** (`org.freedesktop.Notifications`) con timeout explícito | no roba el foco; el sonido y el estilo quedan en manos del escritorio |
 | Decisión: **`kdialog` con botones** en Plasma, **`zenity`** con botones en GNOME | dibuja botones reales, persiste y permite etiquetas propias traducidas en los dos |
 | **Idiomas: inglés (fuente) y español**, gettext `.po` | formato que el ecosistema ya usa; el resto entra por aporte |
 | **Cola de a una petición** | N2 |
@@ -280,24 +282,35 @@ Decidido. Motivos, en orden:
 
 ## 11. Preguntas abiertas
 
-1. **Cómo vuelve la respuesta**: publicar en un topic de respuesta, o llamar la URL de la
-   acción `http`. El primero no exige exponer nada; el segundo es el estándar de ntfy.
-2. **Qué pasa cuando el emisor espera y nadie contesta**: ¿vence? ¿se reintenta?
-3. **Verificación en GNOME**: falta una máquina para probar `zenity` y las notificaciones.
-4. **Adjuntos**: ¿descargar y abrir, o abrir la URL en el navegador?
-5. **Historial local**: ¿cuántos mensajes y dónde se guardan?
+Resueltas desde que se escribió el alcance (2026-11-21/22), y no vuelven:
+
+- **Cómo vuelve la respuesta**: por la acción `http`, que es el estándar de ntfy. Publicar en un
+  topic de respuesta no se implementa (`internal/action` solo admite `view` y `http`).
+- **Qué pasa cuando el emisor espera y nadie contesta**: la petición vence a los 10 minutos y se
+  contesta como no atendida (`queue.DefaultTTL`).
+- **Historial local**: 500 mensajes por topic en `$XDG_CACHE_HOME/ntfy-desktop/history`, con
+  deduplicación por `id` (`history.DefaultLimit`).
+
+Abiertas:
+
+1. **Verificación en GNOME**: falta una máquina para probar `zenity` y las notificaciones
+   (issue #18).
+2. **Adjuntos**: ¿descargar y abrir, o abrir la URL en el navegador?
 
 ## 12. Hitos
 
 Sin fechas. Cada hito se cierra cuando se puede probar.
 
-1. **Lectura**: conecta, se suscribe, imprime los mensajes. Sin interfaz.
-2. **Aviso**: notificación por mensaje, con prioridad y timeout correctos.
-3. **Decisión**: acciones visibles, diálogo, respuesta publicada, cola de a una.
-4. **Resiliencia**: reconexión con `since`, arranque con la sesión.
-5. **Historial**: guardar lo recibido, leer, marcar.
-6. **Publicación**: enviar mensajes desde el escritorio.
-7. **Portabilidad**: adaptador de GNOME verificado en una máquina real.
+1. **Lectura**: conecta, se suscribe, imprime los mensajes. Sin interfaz. — **cumplido**
+2. **Aviso**: notificación por mensaje, con prioridad y timeout correctos. — **cumplido**
+3. **Decisión**: acciones visibles, diálogo, respuesta publicada, cola de a una. — **cumplido**
+4. **Resiliencia**: reconexión con `since`, arranque con la sesión. — **cumplido**
+5. **Historial**: guardar lo recibido, leer, marcar. — **cumplido**
+6. **Publicación**: enviar mensajes desde el escritorio. — **cumplido**
+7. **Portabilidad**: adaptador de GNOME verificado en una máquina real. — **pendiente**
+
+Cerrados en 0.3.5 el 2026-11-21. El siguiente trabajo planificado es la lectura en voz alta
+(`plan/tts.md`), que no es parte de este alcance: extiende el aviso, no lo reemplaza.
 
 ## 13. Criterios de aceptación
 
