@@ -22,6 +22,7 @@ type fakeHistory struct {
 	added   []ntfy.Message
 	read    []string // "topic/id", in order
 	addErr  error
+	hasErr  error
 	readErr error
 }
 
@@ -33,6 +34,21 @@ func (f *fakeHistory) Add(m ntfy.Message) error {
 	}
 	f.added = append(f.added, m)
 	return nil
+}
+
+// Has answers the way the store would: an id that was added is in the history.
+func (f *fakeHistory) Has(topic, id string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.hasErr != nil {
+		return false, f.hasErr
+	}
+	for _, m := range f.added {
+		if m.Topic == topic && m.ID == id {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (f *fakeHistory) MarkRead(topic, id string) error {
@@ -199,6 +215,129 @@ func TestDeliverWithoutHistory(t *testing.T) {
 
 	if shown != 1 {
 		t.Errorf("shown %d times; want 1", shown)
+	}
+}
+
+// TestDeliverSkipsWhatTheHistoryAlreadyHas is the acceptance criterion of the
+// deduplication: a message the store already holds does not reach the desktop
+// again, and one it has never seen does.
+func TestDeliverSkipsWhatTheHistoryAlreadyHas(t *testing.T) {
+	cases := []struct {
+		name      string
+		stored    bool
+		wantShown int
+		wantQueue int
+	}{
+		{name: "a message the history already holds", stored: true, wantShown: 0, wantQueue: 0},
+		{name: "a message the history has never seen", stored: false, wantShown: 1, wantQueue: 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			log, logs := newTestLogger()
+			h := &fakeHistory{}
+			m := ntfy.Message{
+				ID:      "m1",
+				Event:   ntfy.EventMessage,
+				Topic:   "ops",
+				Message: "hola",
+				Actions: []ntfy.Action{{Action: "view", Label: "Open", URL: "https://example.com"}},
+			}
+			if c.stored {
+				if err := h.Add(m); err != nil {
+					t.Fatalf("seeding the history with %q = %v; want no error", m.ID, err)
+				}
+			}
+
+			shown, queued := 0, 0
+			p := ports{
+				hist:   h,
+				show:   func(context.Context, ntfy.Message) error { shown++; return nil },
+				submit: func(ntfy.Message) error { queued++; return nil },
+			}
+
+			deliver(context.Background(), log, m, p)
+
+			if shown != c.wantShown {
+				t.Errorf("shown %d times; want %d", shown, c.wantShown)
+			}
+			if queued != c.wantQueue {
+				t.Errorf("queued %d times; want %d", queued, c.wantQueue)
+			}
+			if logs.warned() {
+				t.Error("the delivery warned; want a quiet run")
+			}
+		})
+	}
+}
+
+// TestDeliverSkipsWhatThePreviousRunStored is acceptance criterion 4 with the
+// real store: a restart over the same history does not notify again what the
+// previous run already delivered.
+func TestDeliverSkipsWhatThePreviousRunStored(t *testing.T) {
+	dir := t.TempDir()
+	msg := func(id string, at int64) ntfy.Message {
+		return ntfy.Message{
+			ID: id, Event: ntfy.EventMessage, Topic: "mrhome", Time: at, Message: id,
+		}
+	}
+	log, _ := newTestLogger()
+
+	first, err := history.Open(dir, history.DefaultLimit)
+	if err != nil {
+		t.Fatalf("history.Open() = %v; want no error", err)
+	}
+	shown := 0
+	before := ports{
+		hist: first,
+		show: func(context.Context, ntfy.Message) error { shown++; return nil },
+	}
+	deliver(context.Background(), log, msg("a", 100), before)
+	deliver(context.Background(), log, msg("b", 200), before)
+	if shown != 2 {
+		t.Fatalf("the first run showed %d messages; want 2", shown)
+	}
+
+	// The restart: a new store over the directory the first run wrote, asked
+	// for the same messages again the way a stale since does.
+	second, err := history.Open(dir, history.DefaultLimit)
+	if err != nil {
+		t.Fatalf("history.Open() after the restart = %v; want no error", err)
+	}
+	again := 0
+	after := ports{
+		hist: second,
+		show: func(context.Context, ntfy.Message) error { again++; return nil },
+	}
+	deliver(context.Background(), log, msg("a", 100), after)
+	deliver(context.Background(), log, msg("b", 200), after)
+	if again != 0 {
+		t.Errorf("the restart showed %d already stored messages; want 0", again)
+	}
+
+	deliver(context.Background(), log, msg("c", 300), after)
+	if again != 1 {
+		t.Errorf("the restart showed %d messages; want the one it had never seen", again)
+	}
+}
+
+// TestDeliverShowsWhenTheHistoryCannotAnswer: Has is a lookup and not a gate, so
+// failing it costs the deduplication and not the notification.
+func TestDeliverShowsWhenTheHistoryCannotAnswer(t *testing.T) {
+	log, logs := newTestLogger()
+	h := &fakeHistory{hasErr: errors.New("the cache directory is unreadable")}
+	shown := 0
+	p := ports{
+		hist: h,
+		show: func(context.Context, ntfy.Message) error { shown++; return nil },
+	}
+
+	deliver(context.Background(), log, ntfy.Message{ID: "m1", Event: ntfy.EventMessage, Topic: "ops"}, p)
+
+	if shown != 1 {
+		t.Errorf("shown %d times; want 1 even when the history could not answer", shown)
+	}
+	if !logs.warned() {
+		t.Error("the lookup failure was not logged at warning level")
 	}
 }
 

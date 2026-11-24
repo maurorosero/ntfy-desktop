@@ -22,9 +22,12 @@ import (
 )
 
 // recorder is the history the daemon writes. It is declared here, where it is
-// used, and internal/history is the implementation.
+// used, and internal/history is the implementation. Has is what lets deliver
+// tell a message that is new from one the server sent again: the subscription
+// resumes from a single since for every topic, so re-reading is normal.
 type recorder interface {
 	Add(m ntfy.Message) error
+	Has(topic, id string) (bool, error)
 	MarkRead(topic, id string) error
 }
 
@@ -196,9 +199,9 @@ func openHistory(log *slog.Logger) *history.Store {
 //
 // The protocol takes one since for a whole subscription, so several topics
 // share it. The oldest of their newest ids is the one that cannot skip a topic;
-// the price is re-reading some messages, which the store folds by id. A topic
-// without anything stored contributes nothing, and an empty history yields an
-// empty id: the subscription then starts live.
+// the price is re-reading some messages, which deliver skips by asking the store
+// before it notifies. A topic without anything stored contributes nothing, and
+// an empty history yields an empty id: the subscription then starts live.
 func startID(store resumable, topics []string) string {
 	if store == nil {
 		return ""
@@ -255,9 +258,11 @@ func supervise(
 }
 
 // deliver records one message in the history and shows it; when it asks
-// something this client can run, it hands it to the queue too. A failure in any
-// step is logged: one notification that could not be drawn does not stop the
-// subscription.
+// something this client can run, it hands it to the queue too. A message the
+// history already holds is not shown again: the subscription resumes from one
+// since for every topic, so a restart re-reads messages that were already
+// delivered and read. A failure in any step is logged: one notification that
+// could not be drawn does not stop the subscription.
 func deliver(ctx context.Context, log *slog.Logger, m ntfy.Message, p ports) {
 	if !m.IsMessage() {
 		// Open, keepalive and the rest are not messages: the history is for what
@@ -268,10 +273,27 @@ func deliver(ctx context.Context, log *slog.Logger, m ntfy.Message, p ports) {
 
 	// The history comes first, so a message is remembered even when the desktop
 	// refuses to draw it or nobody answers it.
+	already := false
 	if p.hist != nil {
+		// A history that cannot answer costs the deduplication and not the
+		// notification: the message is delivered as if it were new.
+		seen, err := p.hist.Has(m.Topic, m.ID)
+		switch {
+		case err != nil:
+			log.Warn("asking the history about the message", "message", m.ID, "error", err)
+		default:
+			already = seen
+		}
 		if err := p.hist.Add(m); err != nil {
 			log.Warn("storing the message in the history", "message", m.ID, "error", err)
 		}
+	}
+
+	if already {
+		// Showing it again is the interruption this guards against, and asking
+		// its decision again would be the same one with a dialog.
+		log.Debug("the message is already in the history", "message", m.ID, "topic", m.Topic)
+		return
 	}
 
 	if p.show != nil {
