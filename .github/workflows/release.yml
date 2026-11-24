@@ -94,7 +94,7 @@ jobs:
             echo "de usuario; la configuración es tuya, en \`~/.config/ntfy-desktop/config.toml\`."
           } > "${RUNNER_TEMP}/release-notes.md"
       - name: construir y publicar
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
           args: release --clean
