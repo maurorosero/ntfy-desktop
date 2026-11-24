@@ -1,0 +1,1 @@
+Messages already stored in the history are no longer notified again when the client restarts. The subscription resumes from a single point for every topic, so a topic that stayed quiet makes the others re-read what you already saw; those messages are now recognised in the history and skipped, and their decisions are not asked a second time.

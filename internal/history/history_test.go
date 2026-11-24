@@ -261,6 +261,107 @@ func TestMarkReadSurvivesAnotherOpen(t *testing.T) {
 	}
 }
 
+// TestHas is the lookup the daemon uses to tell a re-delivered message from a
+// new one: every case here is a state the history can be in when a restart
+// re-reads the topic.
+func TestHas(t *testing.T) {
+	cases := []struct {
+		name      string
+		stored    []string // ids added to topic "topic"
+		mark      []string // ids marked read before asking
+		topic     string
+		id        string
+		want      bool
+		wantError bool
+	}{
+		{
+			name:   "an id the topic holds",
+			stored: []string{"a", "b", "c"},
+			topic:  "topic",
+			id:     "b",
+			want:   true,
+		},
+		{
+			name:   "an id the topic never got",
+			stored: []string{"a", "b"},
+			topic:  "topic",
+			id:     "zz",
+			want:   false,
+		},
+		{
+			name:   "an entry that was marked read is still stored",
+			stored: []string{"a"},
+			mark:   []string{"a"},
+			topic:  "topic",
+			id:     "a",
+			want:   true,
+		},
+		{
+			name:   "a topic without a file",
+			stored: []string{"a"},
+			topic:  "other",
+			id:     "a",
+			want:   false,
+		},
+		{
+			name:  "an empty history",
+			topic: "topic",
+			id:    "a",
+			want:  false,
+		},
+		{
+			name:      "a topic that is not a name",
+			stored:    []string{"a"},
+			topic:     "../escape",
+			id:        "a",
+			want:      false,
+			wantError: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := openStore(t, t.TempDir(), 0)
+			for i, id := range c.stored {
+				if err := s.Add(message(id, "topic", "", "", int64(100*(i+1)))); err != nil {
+					t.Fatalf("Add(%q) = error %v; want no error", id, err)
+				}
+			}
+			for _, id := range c.mark {
+				if err := s.MarkRead("topic", id); err != nil {
+					t.Fatalf("MarkRead(%q) = error %v; want no error", id, err)
+				}
+			}
+
+			got, err := s.Has(c.topic, c.id)
+			if c.wantError != (err != nil) {
+				t.Fatalf("Has(%q, %q) = error %v; want an error: %t", c.topic, c.id, err, c.wantError)
+			}
+			if got != c.want {
+				t.Errorf("Has(%q, %q) = %t; want %t", c.topic, c.id, got, c.want)
+			}
+		})
+	}
+}
+
+// TestHasSurvivesAnotherOpen guards the reason Has reads the file at all: the
+// message that comes back after a restart is one the previous run wrote.
+func TestHasSurvivesAnotherOpen(t *testing.T) {
+	dir := t.TempDir()
+	s := openStore(t, dir, 0)
+	if err := s.Add(message("a", "topic", "", "", 100)); err != nil {
+		t.Fatalf("Add() = error %v; want no error", err)
+	}
+
+	again := openStore(t, dir, 0)
+	if got, err := again.Has("topic", "a"); err != nil || !got {
+		t.Errorf("Has() after reopening = (%t, %v); want (true, no error)", got, err)
+	}
+	if got, err := again.Has("topic", "b"); err != nil || got {
+		t.Errorf("Has() for an unknown id = (%t, %v); want (false, no error)", got, err)
+	}
+}
+
 func TestLimit(t *testing.T) {
 	cases := []struct {
 		name   string

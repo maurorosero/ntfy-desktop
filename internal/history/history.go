@@ -180,6 +180,29 @@ func (s *Store) Add(m ntfy.Message) error {
 	return s.store(m.Topic, entryFrom(m))
 }
 
+// Has reports whether the topic already holds a record with this id. It reads
+// the entries the store loaded at Open, not the file again: a topic that is
+// stored once is asked about on every re-delivered message.
+func (s *Store) Has(topic, id string) (bool, error) {
+	if !topicPattern.MatchString(topic) {
+		return false, fmt.Errorf("%q is not a topic name", topic)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tf, err := s.load(topic)
+	if err != nil {
+		return false, err
+	}
+	for i := range tf.entries {
+		if tf.entries[i].ID == id {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // MarkRead marks the message id of topic as read. Asking for one that is not
 // stored is not an error: the history is a cache and the limit may have dropped
 // it already.
