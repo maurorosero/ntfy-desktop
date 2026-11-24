@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+## [0.3.6] - 2026-11-24
+
+### Fixed
+
+- Messages already stored in the history are no longer notified again when the client restarts. The subscription resumes from a single point for every topic, so a topic that stayed quiet makes the others re-read what you already saw; those messages are now recognised in the history and skipped, and their decisions are not asked a second time.
+
 ## [0.3.5] - 2026-11-21
 
 ### Added
@@ -180,5 +186,6 @@ First public skeleton. The binary does not connect to an ntfy server yet.
 [0.3.0]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.0
 [0.3.2]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.2
 [0.3.5]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.5
-[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.5...HEAD
+[0.3.6]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.3.6
+[Unreleased]: https://github.com/maurorosero/ntfy-desktop/compare/v0.3.6...HEAD
 [0.0.1]: https://github.com/maurorosero/ntfy-desktop/releases/tag/v0.0.1
